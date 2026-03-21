@@ -1,0 +1,7 @@
+## Interface: 120000
+## Title: Lucky's Utils
+## Notes: Shared Library for Lucky Phil's Addons
+## Version: 1.0.0
+## Author: Lucky Phil
+
+LuckyUI.lua

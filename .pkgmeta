@@ -1,0 +1,8 @@
+package-as: Luckys_Utils
+
+move-folders:
+  Luckys_Utils/Luckys_Utils: Luckys_Utils
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
