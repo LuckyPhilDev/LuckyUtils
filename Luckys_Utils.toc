@@ -6,3 +6,4 @@
 
 LuckyLog.lua
 LuckyUI.lua
+LuckySettings.lua

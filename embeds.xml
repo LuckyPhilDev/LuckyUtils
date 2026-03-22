@@ -1,4 +1,5 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <Script file="LuckyLog.lua"/>
     <Script file="LuckyUI.lua"/>
+    <Script file="LuckySettings.lua"/>
 </Ui>
