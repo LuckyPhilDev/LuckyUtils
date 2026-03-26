@@ -3,4 +3,5 @@
     <Script file="LuckyUI.lua"/>
     <Script file="LuckySettings.lua"/>
     <Script file="LuckyMinimap.lua"/>
+    <Script file="LuckyDeps.lua"/>
 </Ui>
