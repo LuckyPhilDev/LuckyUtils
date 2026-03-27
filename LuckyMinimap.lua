@@ -42,7 +42,19 @@ function LuckyMinimap:Create(opts)
     opts.db[opts.dbKey] = opts.db[opts.dbKey] or { minimapPos = 220, hide = false }
     local state = opts.db[opts.dbKey]
 
+    print("|cff00ff00[LuckyMinimap]|r Create() called for:", opts.name)
+    print("  Minimap global:", tostring(Minimap), type(Minimap))
+    if Minimap then
+        print("  Minimap:GetName():", tostring(Minimap:GetName()))
+        print("  Minimap:IsShown():", tostring(Minimap:IsShown()))
+    end
+
     local btn = CreateFrame("Button", opts.name, Minimap)
+    print("  btn created:", tostring(btn))
+    print("  btn:GetParent():", tostring(btn:GetParent()))
+    print("  btn:GetParent() name:", btn:GetParent() and tostring(btn:GetParent():GetName()))
+    print("  _G[opts.name]:", tostring(_G[opts.name]))
+    print("  same frame?:", tostring(_G[opts.name] == btn))
     btn:SetSize(32, 32)
     btn:SetFrameStrata("MEDIUM")
     btn:SetFrameLevel(8)
@@ -125,8 +137,17 @@ function LuckyMinimap:Create(opts)
 
     --- Toggle visibility and persist the choice.
     function btn:SetShown_Persisted(show)
+        print("|cff00ff00[LuckyMinimap]|r SetShown_Persisted called")
+        print("  show arg:", tostring(show), type(show))
+        print("  state.hide before:", tostring(state.hide))
+        print("  btn name:", opts.name)
+        print("  btn:IsShown before:", tostring(self:IsShown()))
         state.hide = not show
-        self:SetShown(show)
+        if show then self:Show() else self:Hide() end
+        print("  state.hide after:", tostring(state.hide))
+        print("  btn:IsShown after:", tostring(self:IsShown()))
+        print("  btn:IsVisible after:", tostring(self:IsVisible()))
+        print("  btn:GetParent():", tostring(self:GetParent() and self:GetParent():GetName()))
     end
 
     return btn

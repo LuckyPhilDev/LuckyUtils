@@ -5,6 +5,7 @@
 ## Author: Lucky Phil
 
 LuckyLog.lua
+LuckyDeps.lua
 LuckyUI.lua
 LuckySettings.lua
 LuckyMinimap.lua
