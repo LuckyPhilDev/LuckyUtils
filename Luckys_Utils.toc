@@ -4,6 +4,7 @@
 ## Version: 1.0.0
 ## Author: Lucky Phil
 
+LuckyUtils.lua
 LuckyLog.lua
 LuckyDeps.lua
 LuckyUI.lua

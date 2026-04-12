@@ -208,6 +208,53 @@ function LuckyUI.CreateCheckbox(parent, size)
     return cb
 end
 
+--- Attach drag-to-move behaviour to a frame with SavedVariables persistence.
+-- Enables RegisterForDrag, OnDragStart/Stop, and immediately restores the
+-- saved position (or the supplied default if none exists yet).
+-- Also adds frame:RestorePosition() for callers that need to re-apply later.
+--
+-- opts fields:
+--   db        (table)   SavedVariables table to read/write position from
+--   key       (string)  Key within db where {point, relPoint, x, y} is stored
+--   button    (string)  Drag mouse button — default "LeftButton"
+--   default   (table)   Fallback {point, relPoint, x, y} when db[key] is nil
+--                       e.g. { "CENTER", "CENTER", 0, 200 }
+--
+-- Usage:
+--   LuckyUI.EnableDrag(myFrame, {
+--       db      = MyAddonDB,
+--       key     = "windowPos",
+--       default = { "TOP", "TOP", 0, -200 },
+--   })
+function LuckyUI.EnableDrag(frame, opts)
+    local db  = opts.db
+    local key = opts.key
+    local btn = opts.button or "LeftButton"
+    local def = opts.default or { "CENTER", "CENTER", 0, 0 }
+
+    frame:SetMovable(true)
+    frame:SetClampedToScreen(true)
+    frame:RegisterForDrag(btn)
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local point, _, relPoint, x, y = self:GetPoint()
+        db[key] = { point = point, relPoint = relPoint, x = x, y = y }
+    end)
+
+    function frame:RestorePosition()
+        local pos = db[key]
+        self:ClearAllPoints()
+        if pos then
+            self:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+        else
+            self:SetPoint(def[1], UIParent, def[2], def[3], def[4])
+        end
+    end
+
+    frame:RestorePosition()
+end
+
 --- Create a horizontal divider with optional label text.
 function LuckyUI.CreateDivider(parent, labelText)
     local d = CreateFrame("Frame", nil, parent)
