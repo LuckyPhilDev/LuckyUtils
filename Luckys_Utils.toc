@@ -3,6 +3,8 @@
 ## Notes: Shared Library for Lucky Phil's Addons
 ## Version: 1.0.0
 ## Author: Lucky Phil
+## SavedVariables: LuckySettingsDB
+## X-Curse-Project-ID: 1512341
 
 LuckyUtils.lua
 LuckyLog.lua

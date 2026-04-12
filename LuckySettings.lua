@@ -2,6 +2,22 @@
 
 LuckySettings = {}
 
+local PREFIX = "|cffc9a84c[LuckySettings]|r"
+local devLog -- forward declaration; initialized lazily
+
+local function Log(...)
+    if not devLog then
+        if LuckyLog and LuckyLog.New then
+            devLog = LuckyLog:New(PREFIX, function()
+                return LuckySettingsDB and LuckySettingsDB.debugMode
+            end)
+        else
+            devLog = function() end
+        end
+    end
+    devLog(...)
+end
+
 -- ── Registration ──────────────────────────────────────────────────────────────
 
 --- Register a canvas settings panel with the game's Interface Options.
@@ -9,10 +25,26 @@ LuckySettings = {}
 ---@param displayName string  The name shown in the settings list
 ---@return table|nil  category
 function LuckySettings:Register(canvas, displayName)
-    if not Settings or not Settings.RegisterCanvasLayoutCategory then return nil end
-    local category = Settings.RegisterCanvasLayoutCategory(canvas, displayName)
+    Log("Register called for:", displayName)
+    if not Settings or not Settings.RegisterCanvasLayoutCategory then
+        Log("FAIL — Settings API not available (Settings =", tostring(Settings) .. ")")
+        return nil
+    end
+    local ok, category = pcall(Settings.RegisterCanvasLayoutCategory, canvas, displayName)
+    if not ok then
+        Log("FAIL — RegisterCanvasLayoutCategory threw:", tostring(category))
+        return nil
+    end
     if category then
-        Settings.RegisterAddOnCategory(category)
+        local ok2, err = pcall(Settings.RegisterAddOnCategory, category)
+        if not ok2 then
+            Log("FAIL — RegisterAddOnCategory threw:", tostring(err))
+        else
+            local id = (type(category.GetID) == "function" and category:GetID()) or category.ID
+            Log("OK — registered, category ID:", tostring(id))
+        end
+    else
+        Log("FAIL — RegisterCanvasLayoutCategory returned nil for:", displayName)
     end
     return category
 end
@@ -20,14 +52,22 @@ end
 --- Open the settings panel for a previously registered category.
 ---@param category table  The category object returned by Register()
 function LuckySettings:Open(category)
+    Log("Open called, category:", tostring(category))
     if not category then
+        Log("FAIL — category is nil, cannot open")
         print("Settings panel not registered.")
         return
     end
-    if not Settings or not Settings.OpenToCategory then return end
+    if not Settings or not Settings.OpenToCategory then
+        Log("FAIL — Settings.OpenToCategory not available")
+        return
+    end
     local id = (type(category.GetID) == "function" and category:GetID()) or category.ID
+    Log("Opening category ID:", tostring(id))
     if id then
         Settings.OpenToCategory(id)
+    else
+        Log("FAIL — could not extract category ID")
     end
 end
 
@@ -46,25 +86,50 @@ local function CreateScrollFrame(panel)
         content:SetWidth(width)
     end)
 
+    Log("CreateScrollFrame — scrollFrame:", tostring(scrollFrame),
+        "content:", tostring(content),
+        "width:", tostring(scrollFrame:GetWidth() or 500))
+
     return content
 end
 
 local function UpdateContentHeight(content)
     local bottom = 0
+    local regionCount, childCount = 0, 0
     for _, child in pairs({ content:GetRegions() }) do
-        local _, _, _, _, y = child:GetPoint()
-        if y then
-            local childBottom = -y + (child.GetHeight and child:GetHeight() or 0)
-            if childBottom > bottom then bottom = childBottom end
+        regionCount = regionCount + 1
+        local numPoints = child.GetNumPoints and child:GetNumPoints() or 0
+        if numPoints == 0 then
+            Log("  region", regionCount, "has NO anchor points, type:", child:GetObjectType(),
+                "shown:", tostring(child:IsShown()))
+        else
+            local _, _, _, _, y = child:GetPoint()
+            if y then
+                local childBottom = -y + (child.GetHeight and child:GetHeight() or 0)
+                if childBottom > bottom then bottom = childBottom end
+            else
+                Log("  region", regionCount, "has nil Y offset, type:", child:GetObjectType())
+            end
         end
     end
     for _, child in pairs({ content:GetChildren() }) do
-        local _, _, _, _, y = child:GetPoint()
-        if y then
-            local childBottom = -y + child:GetHeight()
-            if childBottom > bottom then bottom = childBottom end
+        childCount = childCount + 1
+        local numPoints = child.GetNumPoints and child:GetNumPoints() or 0
+        if numPoints == 0 then
+            Log("  child", childCount, "has NO anchor points, type:", child:GetObjectType(),
+                "shown:", tostring(child:IsShown()))
+        else
+            local _, _, _, _, y = child:GetPoint()
+            if y then
+                local childBottom = -y + child:GetHeight()
+                if childBottom > bottom then bottom = childBottom end
+            else
+                Log("  child", childCount, "has nil Y offset, type:", child:GetObjectType())
+            end
         end
     end
+    Log("UpdateContentHeight — regions:", regionCount, "children:", childCount,
+        "bottom:", bottom, "finalHeight:", bottom + 60)
     content:SetHeight(bottom + 60)
 end
 
@@ -298,8 +363,10 @@ end
 ---@param displayName string  Name shown in Interface Options
 ---@return table  builder
 function LuckySettings:NewPanel(displayName)
+    Log("NewPanel called for:", displayName)
     local panel = CreateFrame("Frame")
     panel.name  = displayName
+    panel:Hide() -- ensure first sidebar navigation triggers OnShow
 
     local category = self:Register(panel, displayName)
     local content  = CreateScrollFrame(panel)
@@ -309,8 +376,21 @@ function LuckySettings:NewPanel(displayName)
     title:SetText(displayName)
 
     panel:HookScript("OnShow", function()
+        Log("OnShow fired for:", displayName,
+            "panel visible:", tostring(panel:IsVisible()),
+            "panel size:", tostring(panel:GetWidth()) .. "x" .. tostring(panel:GetHeight()),
+            "content size:", tostring(content:GetWidth()) .. "x" .. tostring(content:GetHeight()))
         UpdateContentHeight(content)
     end)
+
+    panel:HookScript("OnHide", function()
+        Log("OnHide fired for:", displayName)
+    end)
+
+    Log("NewPanel complete for:", displayName,
+        "category:", tostring(category),
+        "panel:", tostring(panel),
+        "content:", tostring(content))
 
     local builder = setmetatable({
         category   = category,
@@ -325,4 +405,22 @@ function LuckySettings:NewPanel(displayName)
     end
 
     return builder
+end
+
+-- ── Debug mode init & slash command ──────────────────────────────────────────
+
+local initFrame = CreateFrame("Frame")
+initFrame:RegisterEvent("ADDON_LOADED")
+initFrame:SetScript("OnEvent", function(_, _, addonName)
+    if addonName ~= "Luckys_Utils" then return end
+    LuckySettingsDB = LuckySettingsDB or { debugMode = false }
+    Log("LuckySettings loaded, debugMode:", tostring(LuckySettingsDB.debugMode))
+end)
+
+SLASH_LUCKYSETTINGSDEBUG1 = "/lsdebug"
+SlashCmdList["LUCKYSETTINGSDEBUG"] = function()
+    LuckySettingsDB = LuckySettingsDB or { debugMode = false }
+    LuckySettingsDB.debugMode = not LuckySettingsDB.debugMode
+    devLog = nil -- force re-init so the new flag takes effect
+    print(PREFIX .. " debug mode: " .. (LuckySettingsDB.debugMode and "|cff69db7cON|r" or "|cffff6b6bOFF|r"))
 end
