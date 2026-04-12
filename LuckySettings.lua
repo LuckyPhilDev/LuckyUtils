@@ -110,6 +110,123 @@ function Builder:Toggle(opts)
     return self
 end
 
+--- Add a segmented pill selector with a label and description.
+--- Each choice is a button; the active choice is highlighted in gold.
+---@param opts table  { label, desc, value, choices, onChange, tooltip?, indent?, gap? }
+---   choices = { { value = "on", label = "On" }, { value = "off", label = "Off" }, ... }
+function Builder:Selector(opts)
+    local anchor  = self.lastAnchor.desc or self.lastAnchor
+    local content = self.content
+
+    -- Label
+    local label = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    label:SetPoint("LEFT", content, "LEFT", 16 + (opts.indent or 0), 0)
+    label:SetPoint("TOP", anchor, "BOTTOM", 0, -(opts.gap or 8))
+    label:SetText(opts.label)
+
+    if opts.tooltip then
+        -- Attach tooltip to an invisible overlay on the label
+        local hitFrame = CreateFrame("Frame", nil, content)
+        hitFrame:SetAllPoints(label)
+        hitFrame:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:AddLine(opts.label, 1, 1, 1)
+            GameTooltip:AddLine(opts.tooltip, 0.7, 0.7, 0.7, true)
+            GameTooltip:Show()
+        end)
+        hitFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    end
+
+    -- Pill container
+    local container = CreateFrame("Frame", nil, content)
+    container:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 26, -4)
+    container:SetHeight(22)
+
+    local buttons = {}
+    local BTN_H = 22
+
+    local function Refresh(selectedValue)
+        for _, btn in ipairs(buttons) do
+            if btn.choiceValue == selectedValue then
+                btn:SetBackdropColor(0.788, 0.659, 0.298, 1)
+                btn:SetBackdropBorderColor(1.0, 0.82, 0.0, 1)
+                btn.label:SetTextColor(0.102, 0.071, 0.035, 1)
+            else
+                btn:SetBackdropColor(0.051, 0.039, 0.020, 0.95)
+                btn:SetBackdropBorderColor(0.227, 0.180, 0.102, 1)
+                btn.label:SetTextColor(0.91, 0.863, 0.784, 1)
+            end
+        end
+    end
+
+    local totalW = 0
+    for i, choice in ipairs(opts.choices) do
+        local btnW = math.max(50, select(2, GameFontNormal:GetFont()) * #choice.label * 0.55 + 24)
+        btnW = math.floor(btnW + 0.5)
+        local btn = CreateFrame("Button", nil, container, "BackdropTemplate")
+        btn:SetSize(btnW, BTN_H)
+        btn:SetBackdrop({
+            bgFile   = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets   = { left = 1, right = 1, top = 1, bottom = 1 },
+        })
+
+        local lbl = btn:CreateFontString(nil, "OVERLAY")
+        lbl:SetFont("Fonts\\FRIZQT__.TTF", 11)
+        lbl:SetPoint("CENTER")
+        lbl:SetText(choice.label)
+        btn.label = lbl
+        btn.choiceValue = choice.value
+
+        if i == 1 then
+            btn:SetPoint("LEFT", container, "LEFT", 0, 0)
+        else
+            btn:SetPoint("LEFT", buttons[i - 1], "RIGHT", -1, 0)
+        end
+
+        btn:SetScript("OnClick", function()
+            Refresh(choice.value)
+            opts.onChange(choice.value)
+        end)
+
+        btn:SetScript("OnEnter", function(self)
+            if self.choiceValue ~= opts.value then
+                self:SetBackdropBorderColor(0.545, 0.451, 0.251, 1)
+            end
+        end)
+        btn:SetScript("OnLeave", function(self)
+            Refresh(opts._currentValue or opts.value)
+        end)
+
+        buttons[i] = btn
+        totalW = totalW + btnW - (i > 1 and 1 or 0)
+    end
+    container:SetWidth(totalW)
+
+    -- Track current value for hover restore
+    local origOnChange = opts.onChange
+    opts.onChange = function(val)
+        opts._currentValue = val
+        origOnChange(val)
+    end
+
+    Refresh(opts.value)
+    opts._currentValue = opts.value
+
+    -- Description
+    local desc = content:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    desc:SetPoint("TOPLEFT", container, "BOTTOMLEFT", 0, -4)
+    desc:SetWidth(400)
+    desc:SetJustifyH("LEFT")
+    desc:SetTextColor(0.54, 0.49, 0.42)
+    desc:SetText(opts.desc or "")
+
+    container.desc = desc
+    self.lastAnchor = container
+    return self
+end
+
 --- Add a gold section heading with a horizontal rule.
 ---@param text string
 function Builder:Section(text)
