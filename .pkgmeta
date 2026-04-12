@@ -1,0 +1,5 @@
+package-as: Luckys_Utils
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
