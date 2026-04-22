@@ -38,9 +38,13 @@ end
 ---   opts.tooltip     (function)      Called with (tooltip) to populate tooltip lines
 ---@return Button
 function LuckyMinimap:Create(opts)
-    -- Ensure db sub-table exists
-    opts.db[opts.dbKey] = opts.db[opts.dbKey] or { minimapPos = 220, hide = false }
+    -- Ensure db sub-table exists with per-field defaults (callers may pre-seed
+    -- an empty table via their own defaults merge, so `or` on the whole table
+    -- isn't enough).
+    opts.db[opts.dbKey] = opts.db[opts.dbKey] or {}
     local state = opts.db[opts.dbKey]
+    if state.minimapPos == nil then state.minimapPos = 220 end
+    if state.hide == nil then state.hide = false end
 
     local btn = CreateFrame("Button", opts.name, Minimap)
     btn:SetSize(32, 32)
