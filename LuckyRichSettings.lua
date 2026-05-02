@@ -72,6 +72,40 @@ end
 local RichBuilder = {}; RichBuilder.__index = RichBuilder
 local RichGroup   = {}; RichGroup.__index   = RichGroup
 
+-- ─── Helpers ──────────────────────────────────────────────────────────────────
+
+local function isVersionRecent(panel, since)
+    if not since or not panel.recentVersions then return false end
+    for _, v in ipairs(panel.recentVersions) do
+        if v == since then return true end
+    end
+    return false
+end
+
+local function firstRealSetting(group)
+    if not group then return nil end
+    for _, s in ipairs(group.settings) do
+        if not s.isSection then return s end
+    end
+    return nil
+end
+
+local function makeNewBadge(parent, anchor)
+    local f = CreateFrame("Frame", nil, parent)
+    local txt = f:CreateFontString(nil, "OVERLAY")
+    txt:SetFont(R_FONT, 11, "")
+    txt:SetText("NEW")
+    txt:SetTextColor(0.08, 0.06, 0.02)
+    txt:SetPoint("CENTER", 0, 0)
+    local w = math.ceil(txt:GetStringWidth()) + 12
+    f:SetSize(w, 16)
+    f:SetPoint("LEFT", anchor, "RIGHT", 8, 0)
+    local bg = f:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(R.accentLight[1], R.accentLight[2], R.accentLight[3], 1)
+    return f
+end
+
 -- ─── Left nav ─────────────────────────────────────────────────────────────────
 
 local function styleNav(btn, active)
@@ -343,7 +377,7 @@ end
 
 function RichBuilder:UpdateAbout(setting)
     self.hoveredSetting = setting
-    aboutShow(self, setting or (self.activeGroup and self.activeGroup.settings[1]))
+    aboutShow(self, setting or firstRealSetting(self.activeGroup))
 end
 
 -- ─── Setting rows ─────────────────────────────────────────────────────────────
@@ -427,6 +461,10 @@ function RichGroup:Toggle(opts)
     label:SetTextColor(R.text[1], R.text[2], R.text[3])
     label:SetText(opts.label)
 
+    if isVersionRecent(self.panel, opts.since) then
+        makeNewBadge(row, label)
+    end
+
     local setting = {
         type      = "Toggle",
         label     = opts.label,
@@ -436,6 +474,7 @@ function RichGroup:Toggle(opts)
         imageSize = opts.imageSize,
         warning   = opts.warning,
         requires  = opts.requires,
+        since     = opts.since,
         row      = row,
         rowHover = hl,
         checkbox = cb,
@@ -476,6 +515,10 @@ function RichGroup:Slider(opts)
     label:SetTextColor(R.text[1], R.text[2], R.text[3])
     label:SetText(opts.label)
 
+    if isVersionRecent(self.panel, opts.since) then
+        makeNewBadge(row, label)
+    end
+
     local slider = CreateFrame("Slider", "LuckySettings_RichSlider_" .. (opts.key or opts.label),
         row, "OptionsSliderTemplate")
     slider:SetWidth(160)
@@ -501,6 +544,7 @@ function RichGroup:Slider(opts)
         image     = opts.image,
         imageSize = opts.imageSize,
         warning   = opts.warning,
+        since     = opts.since,
         min       = opts.min,
         max       = opts.max,
         suffix    = opts.suffix,
@@ -538,6 +582,10 @@ function RichGroup:Button(opts)
     btn:SetText(opts.label)
     btn:SetScript("OnClick", function() if opts.onClick then opts.onClick() end end)
 
+    if isVersionRecent(self.panel, opts.since) then
+        makeNewBadge(row, btn)
+    end
+
     local setting = {
         type      = "Button",
         label     = opts.label,
@@ -546,6 +594,7 @@ function RichGroup:Button(opts)
         image     = opts.image,
         imageSize = opts.imageSize,
         warning   = opts.warning,
+        since     = opts.since,
         row      = row,
         rowHover = hl,
         button   = btn,
@@ -561,6 +610,92 @@ function RichGroup:Button(opts)
     end
 
     attachHover(setting, self)
+    return self
+end
+
+-- ─── Section heading (sub-group within a group) ──────────────────────────────
+
+function RichGroup:Section(name)
+    local frame = CreateFrame("Frame", nil, self.content)
+    frame:SetHeight(28)
+    local anchor, anchorEdge = nextRowAnchor(self)
+    frame:SetPoint("TOPLEFT", anchor, anchorEdge .. "LEFT", 0, 0)
+    frame:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", 0, 0)
+
+    local label = frame:CreateFontString(nil, "OVERLAY")
+    label:SetFont(R_FONT, 10, "")
+    label:SetPoint("BOTTOMLEFT", 14, 4)
+    label:SetText(string.upper(name))
+    label:SetTextColor(R.textDim[1], R.textDim[2], R.textDim[3])
+
+    local rule = frame:CreateTexture(nil, "ARTWORK")
+    rule:SetHeight(1)
+    rule:SetPoint("LEFT", label, "RIGHT", 8, 1)
+    rule:SetPoint("RIGHT", -14, 1)
+    rule:SetColorTexture(R.border[1], R.border[2], R.border[3], R.border[4])
+
+    table.insert(self.settings, { row = frame, isSection = true, name = name })
+    return self
+end
+
+-- ─── Card (read-only navigation row, used in What's New) ──────────────────────
+
+function RichGroup:Card(opts)
+    local row = CreateFrame("Button", nil, self.content)
+    row:EnableMouse(true)
+    row:SetHeight(32)
+    local anchor, anchorEdge = nextRowAnchor(self)
+    row:SetPoint("TOPLEFT", anchor, anchorEdge .. "LEFT", 0, 0)
+    row:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", 0, 0)
+
+    local hl = row:CreateTexture(nil, "BACKGROUND")
+    hl:SetAllPoints()
+    hl:SetColorTexture(R.accent[1], R.accent[2], R.accent[3], 0.06)
+    hl:Hide()
+
+    local label = row:CreateFontString(nil, "OVERLAY")
+    label:SetFont(R_FONT, 12, "")
+    label:SetPoint("LEFT", 14, 0)
+    label:SetTextColor(R.text[1], R.text[2], R.text[3])
+    label:SetText(opts.label)
+
+    local versionTag = row:CreateFontString(nil, "OVERLAY")
+    versionTag:SetFont(R_FONT, 10, "")
+    versionTag:SetPoint("RIGHT", -14, 0)
+    versionTag:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
+    versionTag:SetText(opts.since and ("v" .. opts.since) or "")
+
+    local source = opts.source
+    local sourceGroup = opts.sourceGroup
+    local panel = self.panel
+    row:SetScript("OnEnter", function()
+        hl:Show()
+        panel:UpdateAbout(source)
+    end)
+    row:SetScript("OnLeave", function()
+        hl:Hide()
+        panel:UpdateAbout(nil)
+    end)
+    row:SetScript("OnClick", function()
+        panel:SetActiveGroup(sourceGroup)
+    end)
+
+    -- Mirror source fields so default-show (non-hover) on this group works.
+    local entry = {
+        type      = source.type,
+        label     = source.label,
+        desc      = source.desc,
+        tooltip   = source.tooltip,
+        image     = source.image,
+        imageSize = source.imageSize,
+        warning   = source.warning,
+        requires  = source.requires,
+        since     = source.since,
+        row       = row,
+        rowHover  = hl,
+        isCard    = true,
+    }
+    table.insert(self.settings, entry)
     return self
 end
 
@@ -618,11 +753,77 @@ function RichBuilder:OnOpen(fn)
     self._onOpen = fn
 end
 
+-- Re-anchor every nav button from scratch (used after re-ordering self.groups).
+function RichBuilder:_relayoutNav()
+    for i, g in ipairs(self.groups) do
+        local btn = g.navButton
+        btn:ClearAllPoints()
+        btn:SetPoint("LEFT")
+        btn:SetPoint("RIGHT")
+        if i == 1 then
+            btn:SetPoint("TOP", 0, -4)
+        else
+            btn:SetPoint("TOP", self.groups[i - 1].navButton, "BOTTOM", 0, 0)
+        end
+    end
+end
+
+-- Call after all groups/settings are added. Scans for settings flagged with a
+-- `since` version in `recentVersions` and prepends a "What's New" group that
+-- mirrors them as clickable cards. Cards activate the source group on click.
+function RichBuilder:Finalize()
+    if not self.recentVersions then return end
+
+    local grouped = {}
+    for _, g in ipairs(self.groups) do
+        local items = {}
+        for _, s in ipairs(g.settings) do
+            if not s.isSection and not s.isCard
+               and s.since and isVersionRecent(self, s.since) then
+                table.insert(items, s)
+            end
+        end
+        if #items > 0 then
+            table.insert(grouped, { group = g, items = items })
+        end
+    end
+
+    if #grouped == 0 then return end
+
+    local whatsNew = self:Group("What's New")
+    -- Move What's New to position 1
+    table.remove(self.groups) -- pop from end
+    table.insert(self.groups, 1, whatsNew)
+
+    for _, gn in ipairs(grouped) do
+        whatsNew:Section(gn.group.name)
+        for _, s in ipairs(gn.items) do
+            whatsNew:Card({
+                label       = s.label,
+                since       = s.since,
+                source      = s,
+                sourceGroup = gn.group,
+            })
+        end
+    end
+
+    self:_relayoutNav()
+    self:SetActiveGroup(whatsNew)
+end
+
 function RichBuilder:Open()
     LuckySettings:Open(self.category)
 end
 
 -- ─── Factory ──────────────────────────────────────────────────────────────────
+
+-- Public theme handles for popups/dialogs that want to match the rich panel.
+LuckySettings.Rich = {
+    Theme    = R,
+    Font     = R_FONT,
+    FillBg   = rFillBg,
+    EdgeRule = rEdgeRule,
+}
 
 --- Create a 3-column rich settings panel.
 ---@param displayName string
@@ -685,14 +886,15 @@ function LuckySettings:NewRichPanel(displayName, opts)
     rFillBg(center, R.bg)
 
     local builder = setmetatable({
-        addonFolder = opts.addonFolder,
-        imagesRoot  = opts.imagesRoot,
-        canvas      = canvas,
-        titleBar    = titleBar,
-        nav         = nav,
-        center      = center,
-        about       = about,
-        groups      = {},
+        addonFolder    = opts.addonFolder,
+        imagesRoot     = opts.imagesRoot,
+        recentVersions = opts.recentVersions, -- list of versions whose settings get a NEW badge
+        canvas         = canvas,
+        titleBar       = titleBar,
+        nav            = nav,
+        center         = center,
+        about          = about,
+        groups         = {},
     }, RichBuilder)
 
     buildAbout(builder)
@@ -702,7 +904,7 @@ function LuckySettings:NewRichPanel(displayName, opts)
     canvas:HookScript("OnShow", function()
         if builder._onOpen then builder._onOpen() end
         if builder.activeGroup then
-            aboutShow(builder, builder.hoveredSetting or builder.activeGroup.settings[1])
+            aboutShow(builder, builder.hoveredSetting or firstRealSetting(builder.activeGroup))
         end
     end)
 
