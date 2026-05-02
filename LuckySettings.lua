@@ -314,6 +314,42 @@ function Builder:Section(text)
     return self
 end
 
+--- Add a labeled push-button (with optional description below).
+---@param opts table  { label, desc?, onClick, tooltip?, width?, indent?, gap? }
+function Builder:Button(opts)
+    local anchor  = self.lastAnchor.desc or self.lastAnchor
+    local content = self.content
+
+    local btn = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+    btn:SetSize(opts.width or 160, 22)
+    btn:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", (opts.indent or 0), -(opts.gap or 8))
+    btn:SetText(opts.label)
+    btn:SetScript("OnClick", function() opts.onClick() end)
+
+    if opts.tooltip then
+        btn:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:AddLine(opts.label, 1, 1, 1)
+            GameTooltip:AddLine(opts.tooltip, 0.7, 0.7, 0.7, true)
+            GameTooltip:Show()
+        end)
+        btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    end
+
+    if opts.desc then
+        local desc = content:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+        desc:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 4, -2)
+        desc:SetWidth(400)
+        desc:SetJustifyH("LEFT")
+        desc:SetTextColor(0.54, 0.49, 0.42)
+        desc:SetText(opts.desc)
+        btn.desc = desc
+    end
+
+    self.lastAnchor = btn
+    return self
+end
+
 --- Add a labeled slider with a live value readout.
 --- opts.key must be unique across all sliders in the panel (used for the frame name).
 ---@param opts table  { label, key, min, max, value, onChanged, step?, suffix?, width?, indent?, gap? }
