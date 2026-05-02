@@ -11,6 +11,7 @@ LuckyLog.lua
 LuckyDeps.lua
 LuckyUI.lua
 LuckySettings.lua
+LuckyRichSettings.lua
 LuckyMinimap.lua
 LuckySound.lua
 LuckyRoster.lua
