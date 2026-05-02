@@ -205,16 +205,18 @@ local function buildAbout(panel)
     A.status = status
     status:Hide()
 
-    -- Image holder fills the remaining space below the text. Hidden when no image.
+    -- Image holder wraps the image at its display size. Hidden when no image.
     local imgHolder = CreateFrame("Frame", nil, A)
     rFillBg(imgHolder, { 0, 0, 0, 0.4 })
     rEdgeRule(imgHolder, "TOP", R.border)
     local img = imgHolder:CreateTexture(nil, "ARTWORK")
-    img:SetPoint("TOPLEFT", 8, -8)
-    img:SetPoint("BOTTOMRIGHT", -8, 8)
     imgHolder:Hide()
     A.imageHolder = imgHolder
     A.image = img
+    A.imagePad = 8
+    A.imageDefaultSize = { 190, 190 }
+    A.imageMaxW = 174
+    A.imageMaxH = 280
 end
 
 local function relayoutAbout(panel)
@@ -259,8 +261,6 @@ local function relayoutAbout(panel)
     if A.imageHolder:IsShown() then
         A.imageHolder:ClearAllPoints()
         A.imageHolder:SetPoint("TOPLEFT", cursor, "BOTTOMLEFT", 0, -12)
-        A.imageHolder:SetPoint("RIGHT", A, "RIGHT", -10, 0)
-        A.imageHolder:SetPoint("BOTTOM", A, "BOTTOM", 0, 12)
     end
 end
 
@@ -281,7 +281,21 @@ local function aboutShow(panel, s)
         local path = "Interface\\AddOns\\" .. panel.addonFolder .. "\\"
             .. (panel.imagesRoot and (panel.imagesRoot .. "\\") or "") .. s.image
         A.image:SetTexture(path)
-        A.imageHolder:Show()
+        if A.image:GetTexture() then
+            local size = s.imageSize or A.imageDefaultSize
+            local nw, nh = size[1], size[2]
+            local scale = math.min(A.imageMaxW / nw, A.imageMaxH / nh, 1)
+            local w = math.floor(nw * scale + 0.5)
+            local h = math.floor(nh * scale + 0.5)
+            local pad = A.imagePad
+            A.image:ClearAllPoints()
+            A.image:SetPoint("TOPLEFT", pad, -pad)
+            A.image:SetSize(w, h)
+            A.imageHolder:SetSize(w + pad * 2, h + pad * 2)
+            A.imageHolder:Show()
+        else
+            A.imageHolder:Hide()
+        end
     else
         A.imageHolder:Hide()
     end
@@ -313,10 +327,10 @@ local function aboutShow(panel, s)
     if s.type == "Toggle" then
         local on = s.checkbox and s.checkbox:GetChecked()
         if on then
-            A.status:SetText("● ENABLED")
+            A.status:SetText("|A:common-icon-checkmark:12:12|a ENABLED")
             A.status:SetTextColor(R.success[1], R.success[2], R.success[3])
         else
-            A.status:SetText("○ DISABLED")
+            A.status:SetText("|A:common-icon-redx:12:12|a DISABLED")
             A.status:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
         end
         A.status:Show()
@@ -414,13 +428,14 @@ function RichGroup:Toggle(opts)
     label:SetText(opts.label)
 
     local setting = {
-        type     = "Toggle",
-        label    = opts.label,
-        desc     = opts.desc,
-        tooltip  = opts.tooltip,
-        image    = opts.image,
-        warning  = opts.warning,
-        requires = opts.requires,
+        type      = "Toggle",
+        label     = opts.label,
+        desc      = opts.desc,
+        tooltip   = opts.tooltip,
+        image     = opts.image,
+        imageSize = opts.imageSize,
+        warning   = opts.warning,
+        requires  = opts.requires,
         row      = row,
         rowHover = hl,
         checkbox = cb,
@@ -479,15 +494,16 @@ function RichGroup:Slider(opts)
     valueText:SetText(tostring(opts.value) .. (opts.suffix or ""))
 
     local setting = {
-        type     = "Slider",
-        label    = opts.label,
-        desc     = opts.desc,
-        tooltip  = opts.tooltip,
-        image    = opts.image,
-        warning  = opts.warning,
-        min      = opts.min,
-        max      = opts.max,
-        suffix   = opts.suffix,
+        type      = "Slider",
+        label     = opts.label,
+        desc      = opts.desc,
+        tooltip   = opts.tooltip,
+        image     = opts.image,
+        imageSize = opts.imageSize,
+        warning   = opts.warning,
+        min       = opts.min,
+        max       = opts.max,
+        suffix    = opts.suffix,
         row      = row,
         rowHover = hl,
         slider   = slider,
@@ -523,12 +539,13 @@ function RichGroup:Button(opts)
     btn:SetScript("OnClick", function() if opts.onClick then opts.onClick() end end)
 
     local setting = {
-        type     = "Button",
-        label    = opts.label,
-        desc     = opts.desc,
-        tooltip  = opts.tooltip,
-        image    = opts.image,
-        warning  = opts.warning,
+        type      = "Button",
+        label     = opts.label,
+        desc      = opts.desc,
+        tooltip   = opts.tooltip,
+        image     = opts.image,
+        imageSize = opts.imageSize,
+        warning   = opts.warning,
         row      = row,
         rowHover = hl,
         button   = btn,
@@ -619,11 +636,18 @@ function LuckySettings:NewRichPanel(displayName, opts)
     canvas.name = displayName
     canvas:Hide()
 
+    -- Content wrapper. The Settings canvas adds ~10px inset on all sides;
+    -- negative offsets reclaim that space so backgrounds extend flush to the
+    -- visible Settings frame edges (matches Plumber's pattern).
+    local content = CreateFrame("Frame", nil, canvas)
+    content:SetPoint("TOPLEFT", -14, 10)
+    content:SetPoint("BOTTOMRIGHT", 0,0)
+
     -- Background + columns
-    rFillBg(canvas, R.bg)
+    rFillBg(content, R.bg)
 
     -- Title bar
-    local titleBar = CreateFrame("Frame", nil, canvas)
+    local titleBar = CreateFrame("Frame", nil, content)
     titleBar:SetHeight(40)
     titleBar:SetPoint("TOPLEFT")
     titleBar:SetPoint("TOPRIGHT")
@@ -643,19 +667,19 @@ function LuckySettings:NewRichPanel(displayName, opts)
     titleR:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
 
     -- Three columns under title bar
-    local nav = CreateFrame("Frame", nil, canvas)
+    local nav = CreateFrame("Frame", nil, content)
     nav:SetWidth(112)
     nav:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 0, 0)
     nav:SetPoint("BOTTOMLEFT")
     rFillBg(nav, R.bg3)
     rEdgeRule(nav, "RIGHT", R.border)
 
-    local about = CreateFrame("Frame", nil, canvas)
+    local about = CreateFrame("Frame", nil, content)
     about:SetWidth(210)
     about:SetPoint("TOPRIGHT", titleBar, "BOTTOMRIGHT", 0, 0)
     about:SetPoint("BOTTOMRIGHT")
 
-    local center = CreateFrame("Frame", nil, canvas)
+    local center = CreateFrame("Frame", nil, content)
     center:SetPoint("TOPLEFT", nav, "TOPRIGHT", 0, 0)
     center:SetPoint("BOTTOMRIGHT", about, "BOTTOMLEFT", 0, 0)
     rFillBg(center, R.bg)
