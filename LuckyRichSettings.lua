@@ -396,15 +396,23 @@ local function applyEnabled(setting)
     if setting.button   then setting.button:SetEnabled(enabled) end
 end
 
-local function attachHover(setting, group)
-    setting.row:SetScript("OnEnter", function()
+local function attachHover(setting, group, extraFrames)
+    local function onEnter()
         group.panel:UpdateAbout(setting)
         if setting.rowHover then setting.rowHover:Show() end
-    end)
-    setting.row:SetScript("OnLeave", function()
+    end
+    local function onLeave()
         group.panel:UpdateAbout(nil)
         if setting.rowHover then setting.rowHover:Hide() end
-    end)
+    end
+    setting.row:SetScript("OnEnter", onEnter)
+    setting.row:SetScript("OnLeave", onLeave)
+    if extraFrames then
+        for _, f in ipairs(extraFrames) do
+            f:HookScript("OnEnter", onEnter)
+            f:HookScript("OnLeave", onLeave)
+        end
+    end
 end
 
 local function nextRowAnchor(group)
@@ -496,12 +504,10 @@ function RichGroup:Toggle(opts)
         for _, s in ipairs(group.settings) do
             if s.parentSetting == setting then applyEnabled(s) end
         end
-        if group.panel.hoveredSetting == setting then
-            aboutShow(group.panel, setting)
-        end
+        group.panel:UpdateAbout(setting)
     end)
 
-    attachHover(setting, self)
+    attachHover(setting, self, { cb })
     return self
 end
 
@@ -568,7 +574,7 @@ function RichGroup:Slider(opts)
         applyEnabled(setting)
     end
 
-    attachHover(setting, self)
+    attachHover(setting, self, { slider })
     return self
 end
 
@@ -609,7 +615,7 @@ function RichGroup:Button(opts)
         applyEnabled(setting)
     end
 
-    attachHover(setting, self)
+    attachHover(setting, self, { btn })
     return self
 end
 
