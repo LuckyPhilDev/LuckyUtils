@@ -613,6 +613,31 @@ function RichGroup:Button(opts)
     return self
 end
 
+-- ─── Label (read-only key-value info row) ─────────────────────────────────────
+
+function RichGroup:Label(opts)
+    local frame = CreateFrame("Frame", nil, self.content)
+    frame:SetHeight(22)
+    local anchor, anchorEdge = nextRowAnchor(self)
+    frame:SetPoint("TOPLEFT", anchor, anchorEdge .. "LEFT", 0, 0)
+    frame:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", 0, 0)
+
+    local key = frame:CreateFontString(nil, "OVERLAY")
+    key:SetFont(R_FONT, 11, "")
+    key:SetPoint("LEFT", 14, 0)
+    key:SetTextColor(R.textDim[1], R.textDim[2], R.textDim[3])
+    key:SetText(opts.label)
+
+    local val = frame:CreateFontString(nil, "OVERLAY")
+    val:SetFont(R_FONT, 11, "")
+    val:SetPoint("RIGHT", -14, 0)
+    val:SetTextColor(R.accentLight[1], R.accentLight[2], R.accentLight[3])
+    val:SetText(opts.value)
+
+    table.insert(self.settings, { row = frame, isSection = true })
+    return self
+end
+
 -- ─── Section heading (sub-group within a group) ──────────────────────────────
 
 function RichGroup:Section(name)
