@@ -1,3 +1,8 @@
+## [1.1.1] - 2026-05-03
+
+### Fixed
+- Settings panel right-side details now update instantly when toggling a checkbox, and stay on the active setting while hovering over its checkbox, slider, or button.
+
 ## [1.1.0] - 2026-05-03
 
 ### Added

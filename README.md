@@ -1,3 +1,5 @@
+[Join the Discord](https://discord.gg/87HRHcAYP)
+
 # Lucky's Utils
 
 Shared library for Lucky Phil's WoW addons. Provides a consistent UI theme, reusable frame components, settings panel builder, minimap button factory, and general utilities.
