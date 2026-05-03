@@ -638,6 +638,79 @@ function RichGroup:Label(opts)
     return self
 end
 
+-- ─── Bottom-anchored rows (pinned to bottom of group content) ────────────────
+-- Rows added via BottomLabel/BottomSection stack from bottom upward in the
+-- order they're added. They live outside the normal top-down flow used by
+-- toggles/sliders/sections, so adding more standard rows above doesn't push
+-- them around.
+
+local function relayoutBottom(group)
+    local items = group.bottomSettings
+    if not items or #items == 0 then return end
+    local totalH = 0
+    for _, it in ipairs(items) do totalH = totalH + it.row:GetHeight() end
+    local first = items[1].row
+    first:ClearAllPoints()
+    first:SetPoint("TOPLEFT",  group.content, "BOTTOMLEFT",  0, totalH + 12)
+    first:SetPoint("TOPRIGHT", group.content, "BOTTOMRIGHT", 0, totalH + 12)
+end
+
+function RichGroup:BottomLabel(opts)
+    self.bottomSettings = self.bottomSettings or {}
+    local frame = CreateFrame("Frame", nil, self.content)
+    frame:SetHeight(22)
+
+    local prev = self.bottomSettings[#self.bottomSettings]
+    if prev then
+        frame:SetPoint("TOPLEFT",  prev.row, "BOTTOMLEFT",  0, 0)
+        frame:SetPoint("TOPRIGHT", prev.row, "BOTTOMRIGHT", 0, 0)
+    end
+
+    local key = frame:CreateFontString(nil, "OVERLAY")
+    key:SetFont(R_FONT, 11, "")
+    key:SetPoint("LEFT", 14, 0)
+    key:SetTextColor(R.textDim[1], R.textDim[2], R.textDim[3])
+    key:SetText(opts.label)
+
+    local val = frame:CreateFontString(nil, "OVERLAY")
+    val:SetFont(R_FONT, 11, "")
+    val:SetPoint("RIGHT", -14, 0)
+    val:SetTextColor(R.accentLight[1], R.accentLight[2], R.accentLight[3])
+    val:SetText(opts.value)
+
+    table.insert(self.bottomSettings, { row = frame })
+    relayoutBottom(self)
+    return self
+end
+
+function RichGroup:BottomSection(name)
+    self.bottomSettings = self.bottomSettings or {}
+    local frame = CreateFrame("Frame", nil, self.content)
+    frame:SetHeight(28)
+
+    local prev = self.bottomSettings[#self.bottomSettings]
+    if prev then
+        frame:SetPoint("TOPLEFT",  prev.row, "BOTTOMLEFT",  0, 0)
+        frame:SetPoint("TOPRIGHT", prev.row, "BOTTOMRIGHT", 0, 0)
+    end
+
+    local label = frame:CreateFontString(nil, "OVERLAY")
+    label:SetFont(R_FONT, 10, "")
+    label:SetPoint("BOTTOMLEFT", 14, 4)
+    label:SetText(string.upper(name))
+    label:SetTextColor(R.textDim[1], R.textDim[2], R.textDim[3])
+
+    local rule = frame:CreateTexture(nil, "ARTWORK")
+    rule:SetHeight(1)
+    rule:SetPoint("LEFT", label, "RIGHT", 8, 1)
+    rule:SetPoint("RIGHT", -14, 1)
+    rule:SetColorTexture(R.border[1], R.border[2], R.border[3], R.border[4])
+
+    table.insert(self.bottomSettings, { row = frame })
+    relayoutBottom(self)
+    return self
+end
+
 -- ─── Section heading (sub-group within a group) ──────────────────────────────
 
 function RichGroup:Section(name)
