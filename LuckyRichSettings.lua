@@ -578,6 +578,92 @@ function RichGroup:Slider(opts)
     return self
 end
 
+-- ─── MultiSelect (checkbox dropdown for picking N of M options) ─────────────
+--
+-- opts:
+--   label     string         row label
+--   desc      string         hover description
+--   parent    string?        parent toggle label (enables/disables this row)
+--   options   table[]        { { key, label }, ... }
+--   isChecked function(key)  returns boolean for current state
+--   onToggle  function(key, checked)
+--   summarize function(checkedLabels[])?  returns the dropdown summary text
+--
+function RichGroup:MultiSelect(opts)
+    local row, hl = makeRow(self, opts, 32)
+    local indent = indentForOpts(opts)
+
+    local label = row:CreateFontString(nil, "OVERLAY")
+    label:SetFont(R_FONT, 12, "")
+    label:SetPoint("LEFT", indent, 0)
+    label:SetTextColor(R.text[1], R.text[2], R.text[3])
+    label:SetText(opts.label)
+
+    local dd = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
+    dd:SetPoint("RIGHT", -8, 0)
+    UIDropDownMenu_SetWidth(dd, 150)
+
+    local function checkedLabels()
+        local out = {}
+        for _, o in ipairs(opts.options) do
+            if opts.isChecked(o.key) then table.insert(out, o.label) end
+        end
+        return out
+    end
+
+    local function defaultSummary(labels)
+        if #labels == 0 then return "None" end
+        if #labels == #opts.options then return "All" end
+        if #labels <= 2 then return table.concat(labels, ", ") end
+        return string.format("%d of %d", #labels, #opts.options)
+    end
+
+    local function refreshSummary()
+        local labels = checkedLabels()
+        local fn = opts.summarize or defaultSummary
+        UIDropDownMenu_SetText(dd, fn(labels))
+    end
+
+    UIDropDownMenu_Initialize(dd, function(_, level)
+        for _, o in ipairs(opts.options) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text             = o.label
+            info.checked          = opts.isChecked(o.key)
+            info.keepShownOnClick = true
+            info.isNotRadio       = true
+            info.func             = function(_, _, _, checked)
+                opts.onToggle(o.key, checked)
+                refreshSummary()
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    refreshSummary()
+
+    local setting = {
+        type     = "MultiSelect",
+        label    = opts.label,
+        desc     = opts.desc,
+        tooltip  = opts.tooltip,
+        warning  = opts.warning,
+        since    = opts.since,
+        row      = row,
+        rowHover = hl,
+        dropdown = dd,
+        parent   = opts.parent,
+    }
+    table.insert(self.settings, setting)
+    self.byLabel[opts.label] = setting
+
+    if opts.parent then
+        setting.parentSetting = self.byLabel[opts.parent]
+        applyEnabled(setting)
+    end
+
+    attachHover(setting, self, { dd })
+    return self
+end
+
 function RichGroup:Button(opts)
     local row, hl = makeRow(self, opts, 32)
     local indent = indentForOpts(opts)
