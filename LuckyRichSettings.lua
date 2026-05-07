@@ -201,6 +201,15 @@ local function buildAbout(panel)
     desc:SetJustifyH("LEFT")
     A.desc = desc
 
+    -- Note (subtle italic line under desc; hidden when unset)
+    local note = A:CreateFontString(nil, "OVERLAY")
+    note:SetFont(R_FONT, 11, "")
+    note:SetTextColor(R.textDim[1], R.textDim[2], R.textDim[3])
+    note:SetSpacing(3)
+    note:SetJustifyH("LEFT")
+    note:Hide()
+    A.note = note
+
     -- Warning row (hidden by default)
     local warnHolder = CreateFrame("Frame", nil, A, "BackdropTemplate")
     warnHolder:SetBackdrop(LuckyUI.Backdrop)
@@ -269,6 +278,13 @@ local function relayoutAbout(panel)
 
     local cursor = A.desc
 
+    if A.note:IsShown() then
+        A.note:ClearAllPoints()
+        A.note:SetPoint("TOPLEFT", cursor, "BOTTOMLEFT", 0, -6)
+        A.note:SetPoint("RIGHT", A, "RIGHT", -10, 0)
+        cursor = A.note
+    end
+
     if A.warnHolder:IsShown() then
         A.warnHolder:ClearAllPoints()
         A.warnHolder:SetPoint("TOPLEFT", cursor, "BOTTOMLEFT", 0, -8)
@@ -303,6 +319,7 @@ local function aboutShow(panel, s)
     if not s then
         A.name:SetText("")
         A.desc:SetText("")
+        A.note:Hide()
         A.imageHolder:Hide()
         A.warnHolder:Hide()
         A.rangeHolder:Hide()
@@ -336,6 +353,13 @@ local function aboutShow(panel, s)
 
     A.name:SetText(s.label or "")
     A.desc:SetText(s.desc or s.tooltip or "")
+
+    if s.note and s.note ~= "" then
+        A.note:SetText(s.note)
+        A.note:Show()
+    else
+        A.note:Hide()
+    end
 
     -- Resolve dependency warnings live
     local warningText = s.warning
@@ -478,6 +502,7 @@ function RichGroup:Toggle(opts)
         label     = opts.label,
         desc      = opts.desc,
         tooltip   = opts.tooltip,
+        note      = opts.note,
         image     = opts.image,
         imageSize = opts.imageSize,
         warning   = opts.warning,
