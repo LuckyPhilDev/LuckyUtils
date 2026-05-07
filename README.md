@@ -14,7 +14,7 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 
 - **LuckyUI** — dark/gold colour palette and frame builders: styled panels, headers, buttons, checkboxes, dividers, and drag-to-move with position persistence.
 - **LuckySettings** — fluent builder for Interface Options panels: toggles, selectors, sliders, and section headings.
-- **LuckyRichSettings** — three-column settings panel with grouped navigation, hover descriptions, status badges, and an About panel with screenshots and "What's New" highlights.
+- **LuckyRichSettings** — three-column settings panel with grouped navigation, hover descriptions, status badges, check-list dropdowns, and an About panel with screenshots, notes, and "What's New" highlights.
 - **LuckyRoster** — shared, account-wide character roster (names, classes, professions) so dependent addons see one consistent list.
 - **LuckyMinimap** — draggable minimap buttons with saved position and visibility state, no extra library required.
 - **LuckyLog** — gated debug loggers that stay silent until an addon's debug flag is on.
