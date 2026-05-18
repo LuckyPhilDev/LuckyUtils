@@ -800,6 +800,51 @@ function RichGroup:BottomLabel(opts)
     return self
 end
 
+function RichGroup:BottomLink(opts)
+    self.bottomSettings = self.bottomSettings or {}
+    local frame = CreateFrame("Button", nil, self.content)
+    frame:SetHeight(22)
+
+    local prev = self.bottomSettings[#self.bottomSettings]
+    if prev then
+        frame:SetPoint("TOPLEFT",  prev.row, "BOTTOMLEFT",  0, 0)
+        frame:SetPoint("TOPRIGHT", prev.row, "BOTTOMRIGHT", 0, 0)
+    end
+
+    local hl = frame:CreateTexture(nil, "BACKGROUND")
+    hl:SetAllPoints()
+    hl:SetColorTexture(R.accent[1], R.accent[2], R.accent[3], 0.06)
+    hl:Hide()
+
+    local key = frame:CreateFontString(nil, "OVERLAY")
+    key:SetFont(R_FONT, 11, "")
+    key:SetPoint("LEFT", 14, 0)
+    key:SetTextColor(R.textDim[1], R.textDim[2], R.textDim[3])
+    key:SetText(opts.label)
+
+    local val = frame:CreateFontString(nil, "OVERLAY")
+    val:SetFont(R_FONT, 11, "")
+    val:SetPoint("RIGHT", -14, 0)
+    val:SetTextColor(R.accent[1], R.accent[2], R.accent[3])
+    val:SetText(opts.value)
+
+    frame:SetScript("OnEnter", function()
+        val:SetTextColor(R.accentLight[1], R.accentLight[2], R.accentLight[3])
+        hl:Show()
+    end)
+    frame:SetScript("OnLeave", function()
+        val:SetTextColor(R.accent[1], R.accent[2], R.accent[3])
+        hl:Hide()
+    end)
+    frame:SetScript("OnClick", function()
+        if opts.onClick then opts.onClick() end
+    end)
+
+    table.insert(self.bottomSettings, { row = frame })
+    relayoutBottom(self)
+    return self
+end
+
 function RichGroup:BottomSection(name)
     self.bottomSettings = self.bottomSettings or {}
     local frame = CreateFrame("Frame", nil, self.content)
@@ -1024,6 +1069,7 @@ function RichBuilder:Finalize()
 
     self:_relayoutNav()
     self:SetActiveGroup(whatsNew)
+    self.whatsNewGroup = whatsNew
 end
 
 function RichBuilder:Open()
