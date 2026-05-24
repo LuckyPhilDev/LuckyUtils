@@ -74,10 +74,38 @@ local RichGroup   = {}; RichGroup.__index   = RichGroup
 
 -- ─── Helpers ──────────────────────────────────────────────────────────────────
 
+local function parseVersion(v)
+    if type(v) ~= "string" then return nil end
+    local maj, min, pat = v:match("^(%d+)%.(%d+)%.(%d+)")
+    if not maj then
+        maj, min = v:match("^(%d+)%.(%d+)")
+        pat = "0"
+    end
+    if not maj then return nil end
+    return tonumber(maj), tonumber(min), tonumber(pat or "0")
+end
+
+-- Returns -1, 0, 1 for a<b, a==b, a>b. nil if either unparseable.
+local function compareVersions(a, b)
+    local a1, a2, a3 = parseVersion(a)
+    local b1, b2, b3 = parseVersion(b)
+    if not a1 or not b1 then return nil end
+    if a1 ~= b1 then return a1 < b1 and -1 or 1 end
+    if a2 ~= b2 then return a2 < b2 and -1 or 1 end
+    if a3 ~= b3 then return a3 < b3 and -1 or 1 end
+    return 0
+end
+
 local function isVersionRecent(panel, since)
-    if not since or not panel.recentVersions then return false end
-    for _, v in ipairs(panel.recentVersions) do
-        if v == since then return true end
+    if not since then return false end
+    if panel.minVersion then
+        local cmp = compareVersions(since, panel.minVersion)
+        return cmp ~= nil and cmp >= 0
+    end
+    if panel.recentVersions then
+        for _, v in ipairs(panel.recentVersions) do
+            if v == since then return true end
+        end
     end
     return false
 end
@@ -1032,7 +1060,7 @@ end
 -- `since` version in `recentVersions` and prepends a "What's New" group that
 -- mirrors them as clickable cards. Cards activate the source group on click.
 function RichBuilder:Finalize()
-    if not self.recentVersions then return end
+    if not self.recentVersions and not self.minVersion then return end
 
     local grouped = {}
     for _, g in ipairs(self.groups) do
@@ -1149,7 +1177,8 @@ function LuckySettings:NewRichPanel(displayName, opts)
     local builder = setmetatable({
         addonFolder    = opts.addonFolder,
         imagesRoot     = opts.imagesRoot,
-        recentVersions = opts.recentVersions, -- list of versions whose settings get a NEW badge
+        recentVersions = opts.recentVersions, -- list of versions whose settings get a NEW badge (legacy)
+        minVersion     = opts.minVersion,     -- min semver; any `since` >= this gets a NEW badge
         canvas         = canvas,
         titleBar       = titleBar,
         nav            = nav,
