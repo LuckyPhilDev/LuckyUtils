@@ -1,5 +1,8 @@
-## [1.2.0] - 2026-05-07
+## [1.3.0] - 2026-06-05
 
-### Added
-- Settings panels can now display a check-list dropdown for picking multiple options on a single row.
-- Setting descriptions can include a small note line beneath the description in the About panel for callouts like "per-character setting".
+### Fixed
+- Minimap buttons now sit correctly on the edge of the minimap at any size, instead of sometimes hiding behind a larger minimap.
+- Removed a black square that could appear when hovering a minimap button.
+
+### Improved
+- Minimap buttons can now be repositioned with a simple click and drag, no need to hold Shift.

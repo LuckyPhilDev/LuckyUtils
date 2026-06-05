@@ -148,7 +148,7 @@ LuckyMinimap:Create({
     tooltip = function(tt)
         tt:AddLine(LuckyUI.WC.goldPrimary .. "My Addon" .. LuckyUI.WC.reset)
         tt:AddLine("Left-click: Toggle", 0.91, 0.86, 0.78)
-        tt:AddLine("Shift-drag: Move button", 0.54, 0.49, 0.42)
+        tt:AddLine("Drag: Move button", 0.54, 0.49, 0.42)
     end,
 })
 ```
