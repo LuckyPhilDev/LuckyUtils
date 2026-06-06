@@ -969,16 +969,24 @@ function RichGroup:Card(opts)
     end)
 
     -- Mirror source fields so default-show (non-hover) on this group works.
+    -- Includes the live checkbox/slider references and slider range so the
+    -- About panel renders the correct toggle state and range, not a default.
     local entry = {
         type      = source.type,
         label     = source.label,
         desc      = source.desc,
         tooltip   = source.tooltip,
+        note      = source.note,
         image     = source.image,
         imageSize = source.imageSize,
         warning   = source.warning,
         requires  = source.requires,
         since     = source.since,
+        checkbox  = source.checkbox,
+        slider    = source.slider,
+        min       = source.min,
+        max       = source.max,
+        suffix    = source.suffix,
         row       = row,
         rowHover  = hl,
         isCard    = true,

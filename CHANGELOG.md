@@ -1,3 +1,8 @@
+## [1.3.1] - 2026-06-06
+
+### Fixed
+- Settings panels now show the correct on or off state in the info panel when a setting is displayed without hovering over it.
+
 ## [1.3.0] - 2026-06-05
 
 ### Fixed
