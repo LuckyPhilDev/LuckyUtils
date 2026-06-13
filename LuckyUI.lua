@@ -276,3 +276,81 @@ function LuckyUI.CreateDivider(parent, labelText)
 
     return d
 end
+
+--- Create a styled single-line search input.
+-- Dark input background, a gold border that brightens on focus, a greyed-out
+-- placeholder shown while the box is empty, and a clear (x) button that appears
+-- once there is text. Fires opts.onChange with the trimmed query on every edit.
+--
+-- opts fields:
+--   width       (number)   box width in px (default 200)
+--   height      (number)   box height in px (default 24)
+--   placeholder (string)   hint text shown while empty (default "Search...")
+--   onChange    (function) called with the current trimmed query string
+--
+-- Returns the EditBox, with two convenience methods added:
+--   box:SetQuery(text)  set the text (fires onChange)
+--   box:Clear()         empty the box (fires onChange)
+function LuckyUI.CreateSearchBox(parent, opts)
+    opts = opts or {}
+    local placeholderText = opts.placeholder or "Search..."
+    local onChange = opts.onChange
+    local c = LuckyUI.C
+
+    local box = CreateFrame("EditBox", nil, parent, "BackdropTemplate")
+    box:SetSize(opts.width or 200, opts.height or 24)
+    box:SetBackdrop(LuckyUI.Backdrop)
+    box:SetBackdropColor(c.bgInput[1], c.bgInput[2], c.bgInput[3], c.bgInput[4])
+    box:SetBackdropBorderColor(c.borderDark[1], c.borderDark[2], c.borderDark[3])
+    box:SetAutoFocus(false)
+    box:SetFont(LuckyUI.BODY_FONT, 12, "")
+    box:SetTextColor(c.textLight[1], c.textLight[2], c.textLight[3])
+    box:SetTextInsets(8, 22, 0, 0)
+    box:SetMaxLetters(60)
+
+    -- Placeholder, visible only while the box is empty.
+    local placeholder = box:CreateFontString(nil, "ARTWORK")
+    placeholder:SetFont(LuckyUI.BODY_FONT, 12)
+    placeholder:SetTextColor(c.textMuted[1], c.textMuted[2], c.textMuted[3])
+    placeholder:SetPoint("LEFT", 8, 0)
+    placeholder:SetText(placeholderText)
+
+    -- Clear button, hidden until there is text to clear.
+    local clear = CreateFrame("Button", nil, box)
+    clear:SetSize(16, 16)
+    clear:SetPoint("RIGHT", -4, 0)
+    local clearX = clear:CreateFontString(nil, "OVERLAY")
+    clearX:SetFont(LuckyUI.BODY_FONT, 13)
+    clearX:SetTextColor(c.textMuted[1], c.textMuted[2], c.textMuted[3])
+    clearX:SetPoint("CENTER")
+    clearX:SetText("x")
+    clear:Hide()
+    clear:SetScript("OnEnter", function() clearX:SetTextColor(c.danger[1], c.danger[2], c.danger[3]) end)
+    clear:SetScript("OnLeave", function() clearX:SetTextColor(c.textMuted[1], c.textMuted[2], c.textMuted[3]) end)
+    clear:SetScript("OnClick", function() box:SetText(""); box:ClearFocus() end)
+
+    box:SetScript("OnTextChanged", function(self)
+        local query = strtrim(self:GetText() or "")
+        if query == "" then
+            placeholder:Show()
+            clear:Hide()
+        else
+            placeholder:Hide()
+            clear:Show()
+        end
+        if onChange then onChange(query) end
+    end)
+    box:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus() end)
+    box:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    box:SetScript("OnEditFocusGained", function(self)
+        self:SetBackdropBorderColor(c.goldMuted[1], c.goldMuted[2], c.goldMuted[3])
+    end)
+    box:SetScript("OnEditFocusLost", function(self)
+        self:SetBackdropBorderColor(c.borderDark[1], c.borderDark[2], c.borderDark[3])
+    end)
+
+    function box:SetQuery(text) self:SetText(text or "") end
+    function box:Clear() self:SetText("") end
+
+    return box
+end

@@ -1,3 +1,8 @@
+## [1.4.0] - 2026-06-13
+
+### Added
+- New reusable search input for dependent addons, with a placeholder hint and a one-click clear button.
+
 ## [1.3.1] - 2026-06-06
 
 ### Fixed

@@ -12,7 +12,7 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 
 ## What's Included
 
-- **LuckyUI** — dark/gold colour palette and frame builders: styled panels, headers, buttons, checkboxes, dividers, and drag-to-move with position persistence.
+- **LuckyUI** — dark/gold colour palette and frame builders: styled panels, headers, buttons, checkboxes, dividers, search inputs, and drag-to-move with position persistence.
 - **LuckySettings** — fluent builder for Interface Options panels: toggles, selectors, sliders, and section headings.
 - **LuckyRichSettings** — three-column settings panel with grouped navigation, hover descriptions, status badges, check-list dropdowns, and an About panel with screenshots, notes, and "What's New" highlights.
 - **LuckyRoster** — shared, account-wide character roster (names, classes, professions) so dependent addons see one consistent list.
@@ -97,6 +97,15 @@ LuckyUI.EnableDrag(myFrame, {
     default = { "TOP", "TOP", 0, -200 },
 })
 -- Restores saved position immediately; adds myFrame:RestorePosition()
+
+-- Search input with placeholder and clear button
+local search = LuckyUI.CreateSearchBox(parent, {
+    width       = 220,
+    placeholder = "Search mounts...",
+    onChange    = function(query) FilterList(query) end,  -- query is trimmed
+})
+search:SetPoint("TOPLEFT", 12, -12)
+-- Adds search:SetQuery(text) and search:Clear(); both fire onChange
 ```
 
 ---
