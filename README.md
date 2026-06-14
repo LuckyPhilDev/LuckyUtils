@@ -18,7 +18,7 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 - **LuckyRoster** — shared, account-wide character roster (names, classes, professions) so dependent addons see one consistent list.
 - **LuckyProfiles** — turn any config table into a copy-paste share string and read it back, with a checksum so corrupted strings fail cleanly. Includes ready-made export and import panels.
 - **LuckyItem** — load item and spell data reliably, with a callback that only fires once the name, icon and link have actually arrived from the server. Results are cached for the session, with a batch helper for flicker-free list rendering.
-- **LuckyMinimap** — draggable minimap buttons with saved position and visibility state, no extra library required.
+- **LuckyMinimap** — draggable minimap buttons with saved position and visibility state, plus one-call registration in Blizzard's AddOn Compartment, no extra library required.
 - **LuckyLog** — gated debug loggers that stay silent until an addon's debug flag is on.
 - **LuckyDeps** — optional dependency checks with version validation.
 - **LuckySound** — helpers for addon sound files and built-in WoW sound kit entries.
@@ -187,6 +187,23 @@ LuckyMinimap:Create({
         tt:AddLine("Drag: Move button", 0.54, 0.49, 0.42)
     end,
 })
+```
+
+**AddOn Compartment** — register the addon in Blizzard's native button list at the top of the minimap, as an alternative or companion to the minimap button. The same `onClick` and `tooltip` functions drive both, so a user running several Lucky addons can collapse the cluster of minimap buttons into one menu.
+
+```lua
+LuckyMinimap:RegisterCompartment({
+    name    = "My Addon",
+    icon    = "Interface\\Icons\\INV_Misc_Bag_36",
+    onClick = function(_, mouseBtn)
+        if mouseBtn == "LeftButton" then MyAddon:Toggle() end
+    end,
+    tooltip = function(tt)
+        tt:AddLine(LuckyUI.WC.goldPrimary .. "My Addon" .. LuckyUI.WC.reset)
+        tt:AddLine("Click: Toggle", 0.91, 0.86, 0.78)
+    end,
+})
+-- Returns false on older clients with no compartment; safe to ignore.
 ```
 
 ---

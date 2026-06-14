@@ -189,3 +189,68 @@ function LuckyMinimap:Create(opts)
 
     return btn
 end
+
+-- The compartment passes the clicked mouse button and the menu line frame to
+-- its callback, but their argument positions have shifted across game patches.
+-- Rather than hardcode an order that breaks on the next change, pick them out
+-- of the argument list by shape.
+local function findMouseButton(...)
+    for i = 1, select("#", ...) do
+        local v = select(i, ...)
+        if type(v) == "string" and v:match("Button$") then
+            return v
+        end
+    end
+    return "LeftButton"
+end
+
+local function findFrame(...)
+    for i = 1, select("#", ...) do
+        local v = select(i, ...)
+        if type(v) == "table" and v.GetObjectType then
+            return v
+        end
+    end
+    return nil
+end
+
+--- Register the addon in Blizzard's AddOn Compartment (the collapsible button
+--- list at the top of the minimap). This is an alternative or companion to the
+--- per-addon minimap button: a user running several Lucky addons can collapse
+--- the cluster of minimap buttons into one native menu.
+---
+--- It mirrors the click/tooltip contract of Create, so the same `onClick` and
+--- `tooltip` functions drive both surfaces from one shared config.
+---@param opts table
+---   opts.text    (string)        Label shown in the compartment (fallback: opts.name)
+---   opts.name    (string)        Stable registration id, used if text is absent
+---   opts.icon    (string|number) Texture path or fileID for the menu icon
+---   opts.onClick (function)      Called with (frame, mouseButton) on click
+---   opts.tooltip (function)      Called with (tooltip) to populate tooltip lines
+---@return boolean registered  False if the compartment is unavailable on this client.
+function LuckyMinimap:RegisterCompartment(opts)
+    if not AddonCompartmentFrame or not AddonCompartmentFrame.RegisterAddon then
+        return false
+    end
+
+    AddonCompartmentFrame:RegisterAddon({
+        text                = opts.text or opts.name,
+        icon                = opts.icon,
+        notCheckable        = true,
+        registerForAnyClick = true,
+        func = function(...)
+            if opts.onClick then
+                opts.onClick(findFrame(...), findMouseButton(...))
+            end
+        end,
+        funcOnEnter = opts.tooltip and function(...)
+            GameTooltip:SetOwner(findFrame(...) or UIParent, "ANCHOR_LEFT")
+            opts.tooltip(GameTooltip)
+            GameTooltip:Show()
+        end or nil,
+        funcOnLeave = opts.tooltip and function()
+            GameTooltip:Hide()
+        end or nil,
+    })
+    return true
+end
