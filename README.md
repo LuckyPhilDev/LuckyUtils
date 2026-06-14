@@ -17,6 +17,7 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 - **LuckyRichSettings** — three-column settings panel with grouped navigation, hover descriptions, status badges, check-list dropdowns, and an About panel with screenshots, notes, and "What's New" highlights.
 - **LuckyRoster** — shared, account-wide character roster (names, classes, professions) so dependent addons see one consistent list.
 - **LuckyProfiles** — turn any config table into a copy-paste share string and read it back, with a checksum so corrupted strings fail cleanly. Includes ready-made export and import panels.
+- **LuckyItem** — load item and spell data reliably, with a callback that only fires once the name, icon and link have actually arrived from the server. Results are cached for the session, with a batch helper for flicker-free list rendering.
 - **LuckyMinimap** — draggable minimap buttons with saved position and visibility state, no extra library required.
 - **LuckyLog** — gated debug loggers that stay silent until an addon's debug flag is on.
 - **LuckyDeps** — optional dependency checks with version validation.
@@ -42,7 +43,7 @@ externals:
   YourAddon/Luckys_Utils: https://github.com/LuckyPhilDev/LuckyUtils
 ```
 
-The library loads before your addon code. All globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`) are available after `ADDON_LOADED` fires for your addon.
+The library loads before your addon code. All globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`) are available after `ADDON_LOADED` fires for your addon.
 
 ---
 
@@ -190,6 +191,39 @@ end)
 ```
 
 Export only the portable subset of your DB — functions and frame references are skipped automatically, but leaving them out keeps the string small.
+
+---
+
+### LuckyItem
+
+Item and spell data is not always ready the instant you ask for it. The name, icon, quality and link arrive from the server a moment later, so a row drawn immediately shows blanks that fill in on the next frame. LuckyItem hands you a callback that fires only once the data is present, and caches the result for the rest of the session.
+
+```lua
+-- Resolve one item; the callback fires immediately on a cache hit
+LuckyItem:Get(19019, function(info)
+    if info then
+        print(info.icon, info.name, info.link, info.quality)
+    end
+end)
+
+-- Load a whole list, then render once with no per-row flicker
+LuckyItem:GetMany({ 19019, 17182, 18803 }, function(results)
+    for id, info in pairs(results) do
+        AddRow(info)  -- info is nil for any id that failed to load
+    end
+end)
+
+-- Synchronous render path: read what's already cached, never trigger a load
+local info = LuckyItem:GetCached(19019)
+if LuckyItem:IsCached(19019) then ... end
+
+-- Spells work the same way
+LuckyItem:GetSpell(2061, function(info)
+    if info then print(info.name, info.icon, info.castTime) end
+end)
+```
+
+Item info fields: `id`, `name`, `link`, `quality`, `icon`, `itemLevel`, `minLevel`, `type`, `subType`, `equipLoc`, `classID`, `subclassID`, `sellPrice`, `isReagent`. Spell info fields: `id`, `name`, `icon`, `castTime`.
 
 ---
 

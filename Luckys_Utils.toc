@@ -9,6 +9,7 @@
 LuckyUtils.lua
 LuckyLog.lua
 LuckyDeps.lua
+LuckyItem.lua
 LuckyUI.lua
 LuckyProfiles.lua
 LuckySettings.lua
