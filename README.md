@@ -16,6 +16,7 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 - **LuckySettings** — fluent builder for Interface Options panels: toggles, selectors, sliders, and section headings.
 - **LuckyRichSettings** — three-column settings panel with grouped navigation, hover descriptions, status badges, check-list dropdowns, and an About panel with screenshots, notes, and "What's New" highlights.
 - **LuckyRoster** — shared, account-wide character roster (names, classes, professions) so dependent addons see one consistent list.
+- **LuckyProfiles** — turn any config table into a copy-paste share string and read it back, with a checksum so corrupted strings fail cleanly. Includes ready-made export and import panels.
 - **LuckyMinimap** — draggable minimap buttons with saved position and visibility state, no extra library required.
 - **LuckyLog** — gated debug loggers that stay silent until an addon's debug flag is on.
 - **LuckyDeps** — optional dependency checks with version validation.
@@ -41,7 +42,7 @@ externals:
   YourAddon/Luckys_Utils: https://github.com/LuckyPhilDev/LuckyUtils
 ```
 
-The library loads before your addon code. All globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`) are available after `ADDON_LOADED` fires for your addon.
+The library loads before your addon code. All globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`) are available after `ADDON_LOADED` fires for your addon.
 
 ---
 
@@ -161,6 +162,34 @@ LuckyMinimap:Create({
     end,
 })
 ```
+
+---
+
+### LuckyProfiles
+
+Export and import any config table as a single share string, so users can copy a setup between characters or send it to a friend. The string carries a checksum, so a truncated or mistyped paste is rejected with a clear message instead of loading garbage. Nothing in the string is executable, so importing is safe.
+
+```lua
+-- Low-level encode / decode
+local str = LuckyProfiles:Encode(MyAddonDB.profiles.current)
+
+local data, err = LuckyProfiles:Decode(str)
+if data then
+    -- apply data
+else
+    print(err)  -- e.g. "The share string is corrupted or incomplete."
+end
+
+-- Ready-made panels (built on LuckyUI)
+LuckyProfiles:ShowExport("Export Profile", MyAddonDB.profiles.current)
+
+LuckyProfiles:ShowImport("Import Profile", function(decoded)
+    MyAddonDB.profiles.current = decoded
+    MyAddon:Refresh()
+end)
+```
+
+Export only the portable subset of your DB — functions and frame references are skipped automatically, but leaving them out keeps the string small.
 
 ---
 
