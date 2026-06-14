@@ -110,6 +110,31 @@ search:SetPoint("TOPLEFT", 12, -12)
 -- Adds search:SetQuery(text) and search:Clear(); both fire onChange
 ```
 
+**Virtualised scrolling list** — builds only enough row frames to fill the visible area and recycles them as you scroll, so a few hundred rows stay smooth. You own the look of a row; the list owns scrolling and pooling. Pairs naturally with the search box above.
+
+```lua
+local list = LuckyUI.CreateScrollList(panel, {
+    rowHeight = 24,
+    -- Build a row once; return the frame. Called per pooled slot, not per item.
+    createRow = function(parent)
+        local row = CreateFrame("Frame", nil, parent)
+        row.text = row:CreateFontString(nil, "OVERLAY")
+        row.text:SetFont(LuckyUI.BODY_FONT, 12)
+        row.text:SetPoint("LEFT", 6, 0)
+        return row
+    end,
+    -- Fill a row from a data entry. Called whenever a slot is reused.
+    updateRow = function(row, item, index) row.text:SetText(item.name) end,
+    onClick   = function(item, index) print("clicked", item.name) end,  -- optional
+})
+list:SetPoint("TOPLEFT", 12, -48)
+list:SetSize(280, 360)
+
+list:SetData(myArray)   -- replace data and redraw from the top
+list:Refresh()          -- redraw visible rows after editing the data in place
+list:ScrollTo(20)       -- scroll a 1-based index to the top
+```
+
 ---
 
 ### LuckySettings

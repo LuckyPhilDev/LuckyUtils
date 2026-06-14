@@ -354,3 +354,187 @@ function LuckyUI.CreateSearchBox(parent, opts)
 
     return box
 end
+
+--- Create a virtualised, pooled scrolling list.
+-- Only enough row frames to fill the visible area are ever built; they are
+-- recycled as the user scrolls, so a list of hundreds of items costs the same
+-- as a list of ten. The caller owns the look of a row (createRow builds it,
+-- updateRow fills it from a data entry); the list owns scrolling and pooling.
+--
+-- opts fields:
+--   rowHeight (number)    height of one row in px (default 20)
+--   createRow (function)  createRow(parent) -> rowFrame. Build a row's visuals
+--                         parented to `parent` and RETURN the frame. Called
+--                         once per pooled slot, never per data item.
+--   updateRow (function)  updateRow(rowFrame, item, index). Fill the row from
+--                         the data entry. Called whenever a slot is reused.
+--   onClick   (function)  onClick(item, index, rowFrame, mouseButton). Optional;
+--                         when set, rows gain a hover highlight and respond to
+--                         clicks.
+--
+-- The returned frame is positioned and sized by the caller (SetPoint/SetSize),
+-- and gains:
+--   list:SetData(array)   replace the backing data and redraw from the top
+--   list:Refresh()        redraw visible rows from the current data and scroll
+--   list:GetData()        the current backing array
+--   list:ScrollTo(index)  scroll so a 1-based data index is at the top
+--
+-- Usage:
+--   local list = LuckyUI.CreateScrollList(panel, {
+--       rowHeight = 24,
+--       createRow = function(parent)
+--           local row = CreateFrame("Frame", nil, parent)
+--           row.text = row:CreateFontString(nil, "OVERLAY")
+--           row.text:SetFont(LuckyUI.BODY_FONT, 12)
+--           row.text:SetPoint("LEFT", 6, 0)
+--           return row
+--       end,
+--       updateRow = function(row, item) row.text:SetText(item.name) end,
+--       onClick   = function(item) print("clicked", item.name) end,
+--   })
+--   list:SetPoint("TOPLEFT", 12, -48)
+--   list:SetSize(280, 360)
+--   list:SetData(myArray)
+function LuckyUI.CreateScrollList(parent, opts)
+    opts = opts or {}
+    local rowHeight = opts.rowHeight or 20
+    local createRow = opts.createRow
+    local updateRow = opts.updateRow
+    local onClick   = opts.onClick
+    local c = LuckyUI.C
+
+    local GUTTER = 14  -- reserved width for the scrollbar
+
+    local list = CreateFrame("Frame", nil, parent)
+    list.data = {}
+    list.rows = {}
+
+    -- Row area. Clips so a partially-scrolled row is cut off cleanly rather
+    -- than spilling past the list bounds.
+    local area = CreateFrame("Frame", nil, list)
+    area:SetClipsChildren(true)
+    area:SetPoint("TOPLEFT", 0, 0)
+    area:SetPoint("BOTTOMRIGHT", -GUTTER, 0)
+    list.rowArea = area
+
+    -- Scrollbar (a plain vertical slider; no template needed).
+    local bar = CreateFrame("Slider", nil, list)
+    bar:SetOrientation("VERTICAL")
+    bar:SetWidth(GUTTER - 4)
+    bar:SetPoint("TOPRIGHT", 0, -2)
+    bar:SetPoint("BOTTOMRIGHT", 0, 2)
+    bar:SetThumbTexture(SOLID)
+    bar:SetMinMaxValues(0, 0)
+    bar:SetValueStep(1)
+    bar:SetObeyStepOnDrag(true)
+    bar:SetValue(0)
+    list.scrollBar = bar
+
+    local trough = bar:CreateTexture(nil, "BACKGROUND")
+    trough:SetAllPoints()
+    trough:SetColorTexture(c.bgInput[1], c.bgInput[2], c.bgInput[3], 0.6)
+
+    local thumb = bar:GetThumbTexture()
+    thumb:SetColorTexture(c.goldMuted[1], c.goldMuted[2], c.goldMuted[3], 0.9)
+    thumb:SetWidth(GUTTER - 4)
+
+    -- How many rows are needed to cover the visible area, plus one for the
+    -- partial row that appears at the top or bottom mid-scroll.
+    local function visibleRowCount()
+        local h = area:GetHeight()
+        if h <= 0 then return 0 end
+        return math.ceil(h / rowHeight) + 1
+    end
+
+    -- Grow the pool to at least n rows. Rows are built once and reused.
+    local function acquireRows(n)
+        for i = #list.rows + 1, n do
+            local row = createRow and createRow(area) or CreateFrame("Frame", nil, area)
+            row:SetParent(area)
+            row:SetHeight(rowHeight)
+            if onClick then
+                row:EnableMouse(true)
+                local hl = row:CreateTexture(nil, "HIGHLIGHT")
+                hl:SetAllPoints()
+                hl:SetColorTexture(c.goldAccent[1], c.goldAccent[2], c.goldAccent[3], 0.12)
+                row:SetScript("OnMouseUp", function(self, mouseButton)
+                    if self._item ~= nil then
+                        onClick(self._item, self._index, self, mouseButton)
+                    end
+                end)
+            end
+            list.rows[i] = row
+        end
+    end
+
+    function list:UpdateView()
+        local data     = self.data
+        local total    = #data
+        local areaH    = area:GetHeight()
+        local maxScroll = math.max(0, total * rowHeight - areaH)
+
+        bar:SetMinMaxValues(0, maxScroll)
+        if maxScroll <= 0 then
+            bar:Hide()
+            bar:SetValue(0)
+        else
+            bar:Show()
+            -- Thumb height tracks the visible fraction of the whole list.
+            local frac = areaH / (total * rowHeight)
+            thumb:SetHeight(math.max(20, areaH * frac))
+        end
+
+        local value = bar:GetValue()
+        if value > maxScroll then
+            value = maxScroll
+            bar:SetValue(value)
+        end
+
+        local first     = math.floor(value / rowHeight)  -- rows fully scrolled past
+        local topOffset = value - first * rowHeight       -- 0..rowHeight pixel shift
+        local need      = visibleRowCount()
+        acquireRows(need)
+
+        local areaW = area:GetWidth()
+        for r = 1, #self.rows do
+            local row = self.rows[r]
+            local dataIndex = first + r
+            if r <= need and dataIndex >= 1 and dataIndex <= total then
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", area, "TOPLEFT", 0, topOffset - (r - 1) * rowHeight)
+                row:SetWidth(areaW)
+                row._item  = data[dataIndex]
+                row._index = dataIndex
+                if updateRow then updateRow(row, data[dataIndex], dataIndex) end
+                row:Show()
+            else
+                row._item = nil
+                row:Hide()
+            end
+        end
+    end
+
+    function list:Refresh() self:UpdateView() end
+
+    function list:SetData(arr)
+        self.data = arr or {}
+        bar:SetValue(0)
+        self:UpdateView()
+    end
+
+    function list:GetData() return self.data end
+
+    function list:ScrollTo(index)
+        bar:SetValue((math.max(1, index or 1) - 1) * rowHeight)
+    end
+
+    bar:SetScript("OnValueChanged", function() list:UpdateView() end)
+
+    list:EnableMouseWheel(true)
+    list:SetScript("OnMouseWheel", function(_, delta)
+        bar:SetValue(bar:GetValue() - delta * rowHeight * 3)
+    end)
+    list:SetScript("OnSizeChanged", function(self) self:UpdateView() end)
+
+    return list
+end
