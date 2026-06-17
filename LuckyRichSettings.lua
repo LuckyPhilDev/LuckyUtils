@@ -411,8 +411,10 @@ local function aboutShow(panel, s)
     end
 
     if s.type == "Toggle" then
-        local on = s.checkbox and s.checkbox:GetChecked()
-        if on then
+        if s.disabled then
+            A.status:SetText("|A:common-icon-redx:12:12|a UNAVAILABLE")
+            A.status:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
+        elseif s.checkbox and s.checkbox:GetChecked() then
             A.status:SetText("|A:common-icon-checkmark:12:12|a ENABLED")
             A.status:SetTextColor(R.success[1], R.success[2], R.success[3])
         else
@@ -436,9 +438,13 @@ end
 
 local function applyEnabled(setting)
     local enabled = true
-    if setting.parentSetting then
+    if setting.disabled then
+        enabled = false
+    elseif setting.parentSetting then
         local p = setting.parentSetting
-        if p.type == "Toggle" and p.checkbox then
+        if p.disabled then
+            enabled = false
+        elseif p.type == "Toggle" and p.checkbox then
             enabled = p.checkbox:GetChecked() and true or false
         end
     end
@@ -446,6 +452,13 @@ local function applyEnabled(setting)
     if setting.checkbox then setting.checkbox:SetEnabled(enabled) end
     if setting.slider   then setting.slider:SetEnabled(enabled) end
     if setting.button   then setting.button:SetEnabled(enabled) end
+    if setting.dropdown then
+        if enabled then
+            UIDropDownMenu_EnableDropDown(setting.dropdown)
+        else
+            UIDropDownMenu_DisableDropDown(setting.dropdown)
+        end
+    end
 end
 
 local function attachHover(setting, group, extraFrames)
@@ -540,6 +553,7 @@ function RichGroup:Toggle(opts)
         rowHover = hl,
         checkbox = cb,
         parent   = opts.parent,
+        disabled = opts.disabled,
     }
 
     table.insert(self.settings, setting)
@@ -547,6 +561,13 @@ function RichGroup:Toggle(opts)
 
     if opts.parent then
         setting.parentSetting = self.byLabel[opts.parent]
+        -- A disabled parent locks its whole subtree, so children inherit it.
+        if setting.parentSetting and setting.parentSetting.disabled then
+            setting.disabled = true
+        end
+    end
+
+    if setting.disabled or opts.parent then
         applyEnabled(setting)
     end
 
@@ -778,6 +799,47 @@ function RichGroup:Label(opts)
     val:SetPoint("RIGHT", -14, 0)
     val:SetTextColor(R.accentLight[1], R.accentLight[2], R.accentLight[3])
     val:SetText(opts.value)
+
+    table.insert(self.settings, { row = frame, isSection = true })
+    return self
+end
+
+-- ─── Notice (inline informational / warning banner) ──────────────────────────
+-- A full-width, warn-styled message box that sits in the normal row flow.
+-- Use it to surface state that isn't tied to a single control, e.g. a feature
+-- that's temporarily disabled. Wraps and re-measures its height when the panel
+-- is first sized, so following rows reflow automatically.
+
+function RichGroup:Notice(opts)
+    local frame = CreateFrame("Frame", nil, self.content)
+    local anchor, anchorEdge = nextRowAnchor(self)
+    frame:SetPoint("TOPLEFT",  anchor, anchorEdge .. "LEFT",  0, 0)
+    frame:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", 0, 0)
+
+    local box = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    box:SetPoint("TOPLEFT", 14, -8)
+    box:SetPoint("TOPRIGHT", -14, -8)
+    box:SetBackdrop(LuckyUI.Backdrop)
+    box:SetBackdropColor(R.warn[1], R.warn[2], R.warn[3], 0.07)
+    box:SetBackdropBorderColor(R.warn[1], R.warn[2], R.warn[3], 0.18)
+
+    local text = box:CreateFontString(nil, "OVERLAY")
+    text:SetFont(R_FONT, 11, "")
+    text:SetPoint("TOPLEFT", 8, -6)
+    text:SetPoint("RIGHT", -8, 0)
+    text:SetJustifyH("LEFT")
+    text:SetSpacing(3)
+    text:SetTextColor(R.warn[1], R.warn[2], R.warn[3])
+    text:SetText(opts.text or "")
+
+    local function resize()
+        local h = text:GetStringHeight()
+        if h <= 0 then h = 14 end
+        box:SetHeight(h + 12)
+        frame:SetHeight(h + 12 + 16)
+    end
+    resize()
+    box:SetScript("OnSizeChanged", resize)
 
     table.insert(self.settings, { row = frame, isSection = true })
     return self
