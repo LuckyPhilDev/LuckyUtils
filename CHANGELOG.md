@@ -1,3 +1,8 @@
+## [1.4.1] - 2026-06-17
+
+### Improved
+- Updated for the latest game patch.
+
 ## [1.4.0] - 2026-06-13
 
 ### Added
