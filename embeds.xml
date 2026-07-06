@@ -4,6 +4,7 @@
     <Script file="LuckySettings.lua"/>
     <Script file="LuckyMinimap.lua"/>
     <Script file="LuckyDeps.lua"/>
+    <Script file="LuckyPromo.lua"/>
     <Script file="LuckySound.lua"/>
     <Script file="LuckyRoster.lua"/>
 </Ui>
