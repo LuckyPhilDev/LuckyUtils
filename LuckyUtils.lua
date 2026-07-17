@@ -28,6 +28,8 @@ function LuckyUtils.ApplyDefaults(target, defaults)
             else
                 target[key] = default
             end
+        elseif type(target[key]) == "table" and type(default) == "table" then
+            LuckyUtils.ApplyDefaults(target[key], default)
         end
     end
 end

@@ -1,5 +1,8 @@
 package-as: Luckys_Utils
 
+ignore:
+  - tests
+
 manual-changelog:
   filename: CHANGELOG.md
   markup-type: markdown

@@ -7,6 +7,8 @@
 ## X-Curse-Project-ID: 1512341
 
 LuckyUtils.lua
+LuckyDB.lua
+LuckyBankQueue.lua
 LuckyLog.lua
 LuckyDeps.lua
 LuckyPromo.lua

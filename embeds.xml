@@ -1,10 +1,16 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <Script file="LuckyUtils.lua"/>
+    <Script file="LuckyDB.lua"/>
+    <Script file="LuckyBankQueue.lua"/>
     <Script file="LuckyLog.lua"/>
-    <Script file="LuckyUI.lua"/>
-    <Script file="LuckySettings.lua"/>
-    <Script file="LuckyMinimap.lua"/>
     <Script file="LuckyDeps.lua"/>
     <Script file="LuckyPromo.lua"/>
+    <Script file="LuckyItem.lua"/>
+    <Script file="LuckyUI.lua"/>
+    <Script file="LuckyProfiles.lua"/>
+    <Script file="LuckySettings.lua"/>
+    <Script file="LuckyRichSettings.lua"/>
+    <Script file="LuckyMinimap.lua"/>
     <Script file="LuckySound.lua"/>
     <Script file="LuckyRoster.lua"/>
 </Ui>

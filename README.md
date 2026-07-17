@@ -23,6 +23,8 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 - **LuckyDeps** — optional dependency checks with version validation.
 - **LuckySound** — helpers for addon sound files and built-in WoW sound kit entries.
 - **LuckyUtils** — general utilities: recursive SavedVariables initialisation and canonical `Name-Realm` character keys.
+- **LuckyDB**: transactional, sequential SavedVariables migrations with recursive defaults and schema version checks.
+- **LuckyBankQueue**: sequential container transfers with lock polling, cursor recovery, partial-stack support, and destination retries.
 
 ---
 
@@ -43,7 +45,7 @@ externals:
   YourAddon/Luckys_Utils: https://github.com/LuckyPhilDev/LuckyUtils
 ```
 
-The library loads before your addon code. All globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`) are available after `ADDON_LOADED` fires for your addon.
+The library loads before your addon code. All globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`) are available after `ADDON_LOADED` fires for your addon.
 
 ---
 
@@ -60,6 +62,67 @@ LuckyUtils.ApplyDefaults(MyAddonDB, {
 -- Canonical "Name-Realm" key for the current character
 local key = LuckyUtils.CharacterKey()  -- e.g. "Tharindel-Silvermoon"
 ```
+
+---
+
+### LuckyDB
+
+Migrations run in version order on a working copy. The original SavedVariables table keeps its identity and is only changed after every migration succeeds.
+
+```lua
+local database, versionOrError = LuckyDB:Initialize(MyAddonDB, {
+    version = 2,
+    defaults = {
+        enabled = true,
+        alerts = { sound = true },
+    },
+    migrations = {
+        [1] = function(data)
+            data.alerts = { sound = data.playSound ~= false }
+            data.playSound = nil
+        end,
+        [2] = function(data)
+            data.enabled = data.enabled ~= false
+        end,
+    },
+})
+
+if not database then
+    error("Database migration failed: " .. versionOrError)
+end
+```
+
+The schema version is stored in `__schemaVersion` by default. Pass `versionKey` to use a different field. A migration may raise an error or return `false, message`; either result rolls back the entire upgrade.
+
+---
+
+### LuckyBankQueue
+
+Provide a destination resolver, enqueue source slots, then start the queue. Native WoW container, cursor, and timer APIs are used unless test doubles are supplied.
+
+```lua
+local queue = LuckyBankQueue:New({
+    findDestination = function(itemID, excluded, step)
+        return MyAddon.FindWarbandDestination(itemID, excluded, step)
+    end,
+    onError = function(_, step, code)
+        LuckyLog("MyAddon", "Transfer failed", step.itemID, code)
+    end,
+})
+
+queue:Enqueue({
+    sourceBag = sourceBag,
+    sourceSlot = sourceSlot,
+    itemID = itemID,
+    amount = amount,
+})
+
+queue:Start(function()
+    MyAddon:RefreshBankState()
+end)
+```
+
+`findDestination(itemID, excluded, step)` returns a bag and slot. The queue waits for locked slots, skips incompatible slots, retries when a partial merge leaves an item on the cursor, restores the cursor item to its source on failure, and reports stable error codes through `onError`. Use `GetPendingCount()`, `IsRunning()`, and `Cancel()` to inspect or stop a queue.
 
 ---
 
