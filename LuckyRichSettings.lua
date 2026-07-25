@@ -1,12 +1,13 @@
--- LuckyRichSettings: 3-column high-fidelity settings panel layout.
+-- LuckyRichSettings: high-fidelity settings panel with an optional About rail.
 -- Adds LuckySettings:NewRichPanel() — a richer alternative to NewPanel for
 -- addons that want grouped navigation, hover descriptions, and a screenshot
--- About panel. Coexists with NewPanel/Builder (the simpler single-column API).
+-- optional About panel. Coexists with NewPanel/Builder (the simpler single-column API).
 --
 -- Usage:
 --   local panel = LuckySettings:NewRichPanel("My Addon", {
 --       addonFolder = "MyAddon_Folder",  -- for resolving image paths
 --       imagesRoot  = "images",          -- subfolder under the addon
+--       showAbout   = false,              -- omit the right-hand About rail
 --   })
 --   local g = panel:Group("General")
 --   g:Toggle{ label = "...", desc = "...", checked = ..., onToggle = ... }
@@ -343,6 +344,7 @@ local function relayoutAbout(panel)
 end
 
 local function aboutShow(panel, s)
+    if not panel.showAbout then return end
     local A = panel.about
     if not s then
         A.name:SetText("")
@@ -1210,9 +1212,9 @@ LuckySettings.Rich = {
     EdgeRule = rEdgeRule,
 }
 
---- Create a 3-column rich settings panel.
+--- Create a rich settings panel with grouped navigation and an optional About rail.
 ---@param displayName string
----@param opts table?  { addonFolder?: string, imagesRoot?: string }
+---@param opts table?  { addonFolder?: string, imagesRoot?: string, showAbout?: boolean }
 ---@return table builder
 function LuckySettings:NewRichPanel(displayName, opts)
     Log("NewRichPanel called for:", displayName)
@@ -1252,7 +1254,8 @@ function LuckySettings:NewRichPanel(displayName, opts)
     titleR:SetText("ADDON SETTINGS")
     titleR:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
 
-    -- Three columns under title bar
+    -- Navigation and content sit under the title bar. The About rail is
+    -- optional so list-heavy panels can use the reclaimed width.
     local nav = CreateFrame("Frame", nil, content)
     nav:SetWidth(112)
     nav:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 0, 0)
@@ -1260,15 +1263,21 @@ function LuckySettings:NewRichPanel(displayName, opts)
     rFillBg(nav, R.bg3)
     rEdgeRule(nav, "RIGHT", R.border)
 
-    local about = CreateFrame("Frame", nil, content)
-    about:SetWidth(210)
-    about:SetPoint("TOPRIGHT", titleBar, "BOTTOMRIGHT", 0, 0)
-    about:SetPoint("BOTTOMRIGHT")
-
     local center = CreateFrame("Frame", nil, content)
     center:SetPoint("TOPLEFT", nav, "TOPRIGHT", 0, 0)
-    center:SetPoint("BOTTOMRIGHT", about, "BOTTOMLEFT", 0, 0)
     rFillBg(center, R.bg)
+
+    local showAbout = opts.showAbout ~= false
+    local about
+    if showAbout then
+        about = CreateFrame("Frame", nil, content)
+        about:SetWidth(210)
+        about:SetPoint("TOPRIGHT", titleBar, "BOTTOMRIGHT", 0, 0)
+        about:SetPoint("BOTTOMRIGHT")
+        center:SetPoint("BOTTOMRIGHT", about, "BOTTOMLEFT", 0, 0)
+    else
+        center:SetPoint("BOTTOMRIGHT")
+    end
 
     local builder = setmetatable({
         addonFolder    = opts.addonFolder,
@@ -1280,10 +1289,11 @@ function LuckySettings:NewRichPanel(displayName, opts)
         nav            = nav,
         center         = center,
         about          = about,
+        showAbout      = showAbout,
         groups         = {},
     }, RichBuilder)
 
-    buildAbout(builder)
+    if showAbout then buildAbout(builder) end
 
     builder.category = self:Register(canvas, displayName)
 
