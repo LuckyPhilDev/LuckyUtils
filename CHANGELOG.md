@@ -1,9 +1,8 @@
-## [1.6.0] - 2026-07-06
+## [1.7.0] - 2026-07-25
 
 ### Added
-- Settings panels can now show a "More from Lucky Phil" section listing other Lucky Phil addons you don't have installed, each with a click-to-copy CurseForge link. The section hides itself once you have them all.
+- Addons can now move items between bags and bank tabs one at a time, waiting for each transfer to finish, so bulk moves no longer drop or duplicate stacks when the server is slow.
+- Settings saved by an addon can now be upgraded safely when its options change, with the old settings left untouched if anything goes wrong.
 
-## [1.5.0] - 2026-06-17
-
-### Added
-- Settings panels can now display inline notice messages, and individual options can be shown as unavailable, greyed out and locked from changes, when a feature is temporarily turned off.
+### Improved
+- The About sidebar in settings panels is now optional and can be turned off for individual pages, so pages that need the full width get it.
