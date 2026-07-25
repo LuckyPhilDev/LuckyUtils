@@ -988,6 +988,32 @@ function RichGroup:Section(name)
     return self
 end
 
+-- ─── Fill (scrollable custom-content region) ─────────────────────────────────
+-- Claims the remaining vertical space in the group below the last row and
+-- returns a scroll-child frame the caller builds custom widgets in. The caller
+-- must keep the returned frame's height in sync with its content so the scroll
+-- range is correct. Must be the last row added to the group.
+
+function RichGroup:Fill()
+    local holder = CreateFrame("Frame", nil, self.content)
+    local anchor, anchorEdge = nextRowAnchor(self)
+    holder:SetPoint("TOPLEFT",  anchor, anchorEdge .. "LEFT",  14, -8)
+    holder:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", -14, -8)
+    holder:SetPoint("BOTTOM", self.content, "BOTTOM", 0, 12)
+
+    local scroll = CreateFrame("ScrollFrame", nil, holder, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT")
+    scroll:SetPoint("BOTTOMRIGHT", -22, 0)
+
+    local inner = CreateFrame("Frame", nil, scroll)
+    inner:SetWidth(scroll:GetWidth() or 400)
+    scroll:SetScrollChild(inner)
+    scroll:HookScript("OnSizeChanged", function(_, w) inner:SetWidth(w) end)
+
+    table.insert(self.settings, { row = holder, isSection = true })
+    return inner
+end
+
 -- ─── Card (read-only navigation row, used in What's New) ──────────────────────
 
 function RichGroup:Card(opts)
