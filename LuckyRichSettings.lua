@@ -7,9 +7,8 @@
 --   local panel = LuckySettings:NewRichPanel("My Addon", {
 --       addonFolder = "MyAddon_Folder",  -- for resolving image paths
 --       imagesRoot  = "images",          -- subfolder under the addon
---       showAbout   = false,              -- omit the right-hand About rail
 --   })
---   local g = panel:Group("General")
+--   local g = panel:Group("General", { showAbout = false })
 --   g:Toggle{ label = "...", desc = "...", checked = ..., onToggle = ... }
 --   g:Slider{ label = "...", min = 1, max = 10, value = ..., onChanged = ... }
 --   g:Button{ label = "Configure…", parent = "Some Toggle", onClick = ... }
@@ -344,7 +343,7 @@ local function relayoutAbout(panel)
 end
 
 local function aboutShow(panel, s)
-    if not panel.showAbout then return end
+    if not panel.about or not panel.about:IsShown() then return end
     local A = panel.about
     if not s then
         A.name:SetText("")
@@ -1087,7 +1086,9 @@ end
 
 -- ─── Group / Panel ────────────────────────────────────────────────────────────
 
-function RichBuilder:Group(name)
+function RichBuilder:Group(name, opts)
+    opts = opts or {}
+
     local content = CreateFrame("Frame", nil, self.center)
     content:SetAllPoints()
     content:Hide()
@@ -1111,6 +1112,7 @@ function RichBuilder:Group(name)
         panel      = self,
         content    = content,
         heading    = rule, -- rows anchor below the rule
+        showAbout  = self.about and opts.showAbout ~= false,
         settings   = {},
         byLabel    = {},
     }, RichGroup)
@@ -1123,6 +1125,20 @@ function RichBuilder:Group(name)
     return group
 end
 
+function RichBuilder:_setAboutVisibility(showAbout)
+    if not self.about then return end
+
+    self.center:ClearAllPoints()
+    self.center:SetPoint("TOPLEFT", self.nav, "TOPRIGHT", 0, 0)
+    if showAbout then
+        self.about:Show()
+        self.center:SetPoint("BOTTOMRIGHT", self.about, "BOTTOMLEFT", 0, 0)
+    else
+        self.about:Hide()
+        self.center:SetPoint("BOTTOMRIGHT")
+    end
+end
+
 function RichBuilder:SetActiveGroup(group)
     if self.activeGroup == group then return end
     if self.activeGroup then
@@ -1130,9 +1146,14 @@ function RichBuilder:SetActiveGroup(group)
         styleNav(self.activeGroup.navButton, false)
     end
     self.activeGroup = group
+    self:_setAboutVisibility(group.showAbout)
     group.content:Show()
     styleNav(group.navButton, true)
-    self:UpdateAbout(nil) -- falls back to first setting in active group
+    if group.showAbout then
+        self:UpdateAbout(nil) -- falls back to first setting in active group
+    else
+        self.hoveredSetting = nil
+    end
 end
 
 function RichBuilder:OnOpen(fn)
@@ -1289,7 +1310,6 @@ function LuckySettings:NewRichPanel(displayName, opts)
         nav            = nav,
         center         = center,
         about          = about,
-        showAbout      = showAbout,
         groups         = {},
     }, RichBuilder)
 
@@ -1300,7 +1320,10 @@ function LuckySettings:NewRichPanel(displayName, opts)
     canvas:HookScript("OnShow", function()
         if builder._onOpen then builder._onOpen() end
         if builder.activeGroup then
-            aboutShow(builder, builder.hoveredSetting or firstRealSetting(builder.activeGroup))
+            builder:_setAboutVisibility(builder.activeGroup.showAbout)
+            if builder.activeGroup.showAbout then
+                aboutShow(builder, builder.hoveredSetting or firstRealSetting(builder.activeGroup))
+            end
         end
     end)
 
