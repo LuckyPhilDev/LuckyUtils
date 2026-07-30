@@ -10,7 +10,7 @@
 --   local label = LuckyRoster:FormatName(charKey)  -- class-coloured, hides realm if local
 --   LuckyRoster:RegisterCallback(function() RefreshUI() end)
 
-LuckyRoster = {}
+LuckyRoster = LuckyRoster or {}
 
 local Roster = LuckyRoster
 local callbacks = {}

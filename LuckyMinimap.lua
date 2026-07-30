@@ -1,7 +1,7 @@
 -- LuckyMinimap: Shared minimap button factory for Lucky Phil's addons.
 -- Creates draggable minimap buttons without external library dependencies.
 
-LuckyMinimap = {}
+LuckyMinimap = LuckyMinimap or {}
 
 local math_sqrt = math.sqrt
 local math_atan2 = math.atan2

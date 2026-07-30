@@ -1,6 +1,6 @@
 -- LuckyUtils: General-purpose utility functions for Lucky Phil's addons.
 
-LuckyUtils = {}
+LuckyUtils = LuckyUtils or {}
 
 -- ---------------------------------------------------------------------------
 -- Database Helpers

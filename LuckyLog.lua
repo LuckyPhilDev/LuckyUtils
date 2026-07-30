@@ -1,7 +1,7 @@
 -- LuckyLog: Shared dev-logging factory for Lucky Phil's addons.
 -- Creates gated loggers that only print when an addon's debug flag is on.
 
-LuckyLog = {}
+LuckyLog = LuckyLog or {}
 
 --- Create a new logger function.
 ---@param prefix string  Colored prefix string (e.g. "|cff00cc00Lucky:|r")

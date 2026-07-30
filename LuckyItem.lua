@@ -17,7 +17,7 @@
 --
 -- The callback receives a normalised table, or nil if the id could not load.
 
-LuckyItem = {}
+LuckyItem = LuckyItem or {}
 
 local tinsert = table.insert
 

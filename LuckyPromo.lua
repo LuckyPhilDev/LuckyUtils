@@ -3,7 +3,7 @@
 -- CurseForge link. Addons already installed (or the addon hosting the section)
 -- are never shown, so the section disappears once everything is installed.
 
-LuckyPromo = {}
+LuckyPromo = LuckyPromo or {}
 
 local SECTION_TITLE = "More from Lucky Phil"
 

@@ -1,6 +1,6 @@
 -- LuckySettings: Shared settings registration and panel builder for Lucky Phil's addons.
 
-LuckySettings = {}
+LuckySettings = LuckySettings or {}
 
 local PREFIX = "|cffc9a84c[LuckySettings]|r"
 local devLog -- forward declaration; initialized lazily

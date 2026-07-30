@@ -1,3 +1,8 @@
+## [1.7.1] - 2026-07-30
+
+### Fixed
+- Settings panels no longer fail to open when an out-of-date copy of the library has been left behind inside another addon's folder.
+
 ## [1.7.0] - 2026-07-25
 
 ### Added
