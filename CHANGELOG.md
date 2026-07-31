@@ -1,3 +1,8 @@
+## [1.7.2] - 2026-07-31
+
+### Improved
+- Wide screenshots in settings panels now open at full size beside the cursor instead of shrinking into an unreadable strip in the About sidebar.
+
 ## [1.7.1] - 2026-07-30
 
 ### Fixed

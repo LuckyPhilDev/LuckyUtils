@@ -192,6 +192,77 @@ local function makeNavButton(panel, group, index)
     return btn
 end
 
+-- ─── Floating image preview ───────────────────────────────────────────────────
+-- Wide screenshots shrink to an unreadable strip inside the About rail, so those
+-- are shown full size in a frame next to the cursor instead.
+
+local PREVIEW_MAX_W, PREVIEW_MAX_H = 560, 420
+local PREVIEW_PAD = 10
+local PREVIEW_CURSOR_GAP = 18
+local PREVIEW_SCREEN_MARGIN = 8
+
+local imagePreview
+
+local function getImagePreview()
+    if imagePreview then return imagePreview end
+
+    local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    f:SetFrameStrata("TOOLTIP")
+    f:EnableMouse(false)
+    f:SetBackdrop(LuckyUI.Backdrop)
+    f:SetBackdropColor(R.bg3[1], R.bg3[2], R.bg3[3], 0.97)
+    f:SetBackdropBorderColor(R.border2[1], R.border2[2], R.border2[3], 1)
+    f:Hide()
+
+    f.image = f:CreateTexture(nil, "ARTWORK")
+    f.image:SetPoint("TOPLEFT", PREVIEW_PAD, -PREVIEW_PAD)
+
+    imagePreview = f
+    return f
+end
+
+local function hideImagePreview()
+    if imagePreview then imagePreview:Hide() end
+end
+
+local function anchorPreviewToCursor(f)
+    local uiScale = UIParent:GetEffectiveScale()
+    local cx, cy = GetCursorPosition()
+    cx, cy = cx / uiScale, cy / uiScale
+
+    -- Down and to the left, so the preview never covers the About rail.
+    local w, h = f:GetSize()
+    local x = cx - PREVIEW_CURSOR_GAP - w
+    local y = cy - PREVIEW_CURSOR_GAP
+
+    if x < PREVIEW_SCREEN_MARGIN then
+        x = cx + PREVIEW_CURSOR_GAP
+    end
+    x = math.min(x, UIParent:GetWidth() - PREVIEW_SCREEN_MARGIN - w)
+    x = math.max(PREVIEW_SCREEN_MARGIN, x)
+
+    if y - h < PREVIEW_SCREEN_MARGIN then
+        y = cy + PREVIEW_CURSOR_GAP + h
+    end
+    y = math.min(UIParent:GetHeight() - PREVIEW_SCREEN_MARGIN, y)
+
+    f:ClearAllPoints()
+    f:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
+end
+
+local function showImagePreview(path, nw, nh)
+    local f = getImagePreview()
+    local scale = math.min(PREVIEW_MAX_W / nw, PREVIEW_MAX_H / nh, 1)
+    local w = math.floor(nw * scale + 0.5)
+    local h = math.floor(nh * scale + 0.5)
+
+    f.image:SetTexture(path)
+    f.image:SetSize(w, h)
+    f:SetSize(w + PREVIEW_PAD * 2, h + PREVIEW_PAD * 2)
+    anchorPreviewToCursor(f)
+    f:Show()
+end
+
 -- ─── About panel ──────────────────────────────────────────────────────────────
 
 local function buildAbout(panel)
@@ -288,6 +359,9 @@ local function buildAbout(panel)
     A.imageDefaultSize = { 190, 190 }
     A.imageMaxW = 174
     A.imageMaxH = 280
+    -- Below this rail scale the screenshot is too shrunken to read, so it moves
+    -- to the cursor preview instead.
+    A.imageMinRailScale = 0.6
 end
 
 local function relayoutAbout(panel)
@@ -343,19 +417,26 @@ local function relayoutAbout(panel)
 end
 
 local function aboutShow(panel, s)
-    if not panel.about or not panel.about:IsShown() then return end
+    if not panel.about or not panel.about:IsShown() then
+        hideImagePreview()
+        return
+    end
     local A = panel.about
     if not s then
         A.name:SetText("")
         A.desc:SetText("")
         A.note:Hide()
         A.imageHolder:Hide()
+        hideImagePreview()
         A.warnHolder:Hide()
         A.rangeHolder:Hide()
         A.status:Hide()
         relayoutAbout(panel)
         return
     end
+
+    A.imageHolder:Hide()
+    hideImagePreview()
 
     if s.image and panel.addonFolder then
         local path = "Interface\\AddOns\\" .. panel.addonFolder .. "\\"
@@ -365,19 +446,23 @@ local function aboutShow(panel, s)
             local size = s.imageSize or A.imageDefaultSize
             local nw, nh = size[1], size[2]
             local scale = math.min(A.imageMaxW / nw, A.imageMaxH / nh, 1)
-            local w = math.floor(nw * scale + 0.5)
-            local h = math.floor(nh * scale + 0.5)
-            local pad = A.imagePad
-            A.image:ClearAllPoints()
-            A.image:SetPoint("TOPLEFT", pad, -pad)
-            A.image:SetSize(w, h)
-            A.imageHolder:SetSize(w + pad * 2, h + pad * 2)
-            A.imageHolder:Show()
-        else
-            A.imageHolder:Hide()
+            if scale < A.imageMinRailScale then
+                -- Only while genuinely hovering; the group's default setting
+                -- fills the rail without the cursor being over anything.
+                if panel.hoveredSetting == s then
+                    showImagePreview(path, nw, nh)
+                end
+            else
+                local w = math.floor(nw * scale + 0.5)
+                local h = math.floor(nh * scale + 0.5)
+                local pad = A.imagePad
+                A.image:ClearAllPoints()
+                A.image:SetPoint("TOPLEFT", pad, -pad)
+                A.image:SetSize(w, h)
+                A.imageHolder:SetSize(w + pad * 2, h + pad * 2)
+                A.imageHolder:Show()
+            end
         end
-    else
-        A.imageHolder:Hide()
     end
 
     A.name:SetText(s.label or "")
@@ -1316,6 +1401,11 @@ function LuckySettings:NewRichPanel(displayName, opts)
     if showAbout then buildAbout(builder) end
 
     builder.category = self:Register(canvas, displayName)
+
+    canvas:HookScript("OnHide", function()
+        builder.hoveredSetting = nil
+        hideImagePreview()
+    end)
 
     canvas:HookScript("OnShow", function()
         if builder._onOpen then builder._onOpen() end
