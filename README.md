@@ -374,6 +374,10 @@ LuckySound:Stop(handle)
 
 ---
 
+## A note on AI
+
+My addons are made by one person who plays the game and wants them to work properly. I use AI tools to move faster, mostly on code, bug hunting, and docs, but every change is reviewed and tested in game before release. If a feature feels off or something breaks, that's mine to fix, and the Discord is the fastest way to reach me.
+
 ## Author
 
 Lucky Phil
