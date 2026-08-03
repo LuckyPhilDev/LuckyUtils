@@ -9,7 +9,10 @@
     <Script file="LuckyUI.lua"/>
     <Script file="LuckyProfiles.lua"/>
     <Script file="LuckySettings.lua"/>
-    <Script file="LuckyRichSettings.lua"/>
+    <Script file="LuckyRichSettings\Core.lua"/>
+    <Script file="LuckyRichSettings\About.lua"/>
+    <Script file="LuckyRichSettings\Rows.lua"/>
+    <Script file="LuckyRichSettings\Panel.lua"/>
     <Script file="LuckyMinimap.lua"/>
     <Script file="LuckySound.lua"/>
     <Script file="LuckyRoster.lua"/>

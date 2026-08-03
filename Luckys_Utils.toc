@@ -16,7 +16,10 @@ LuckyItem.lua
 LuckyUI.lua
 LuckyProfiles.lua
 LuckySettings.lua
-LuckyRichSettings.lua
+LuckyRichSettings\Core.lua
+LuckyRichSettings\About.lua
+LuckyRichSettings\Rows.lua
+LuckyRichSettings\Panel.lua
 LuckyMinimap.lua
 LuckySound.lua
 LuckyRoster.lua
