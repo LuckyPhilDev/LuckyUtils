@@ -3,15 +3,37 @@
 -- addons that want grouped navigation, hover descriptions, and a screenshot
 -- optional About panel. Coexists with NewPanel/Builder (the simpler single-column API).
 --
--- Usage:
---   local panel = LuckySettings:NewRichPanel("My Addon", {
+-- Usage (contents lambdas — preferred):
+--   LuckySettings:NewRichPanel("My Addon", {
 --       addonFolder = "MyAddon_Folder",  -- for resolving image paths
 --       imagesRoot  = "images",          -- subfolder under the addon
---   })
---   local g = panel:Group("General", { showAbout = false })
---   g:Toggle{ label = "...", desc = "...", checked = ..., onToggle = ... }
---   g:Slider{ label = "...", min = 1, max = 10, value = ..., onChanged = ... }
---   g:Button{ label = "Configure…", parent = "Some Toggle", onClick = ... }
+--   }, function(panel)
+--       panel:Group("General", function(g)   -- opts table may sit between name and lambda
+--           g:Toggle{ label = "...", desc = "...",
+--                     checked = function() return db.foo end,
+--                     onToggle = function(v) db.foo = v end }
+--           g:Slider{ label = "...", min = 1, max = 10, value = ..., onChanged = ... }
+--           g:Button{ label = "Configure…", parent = "Some Toggle", onClick = ... }
+--       end)
+--   end)
+-- Toggle `checked` and Slider `value` accept a plain value or a zero-arg
+-- function. Function-valued state is re-read every time the panel opens, so
+-- changes made while it was closed never show stale controls.
+-- The panel lambda runs once, the first time the panel is shown, so nothing is
+-- built for players who never open the settings, and values like
+-- `checked = db.foo` are read at open time rather than at login. Finalize()
+-- runs automatically after the panel lambda returns.
+--
+-- A group lambda defers further: its rows build the first time that group is
+-- activated, so opening the panel only builds the group on screen. Exception:
+-- a panel with minVersion/recentVersions builds every group at first show,
+-- because What's New has to scan all rows for `since` flags.
+--
+-- Usage (imperative — still supported):
+--   local panel = LuckySettings:NewRichPanel("My Addon", { ... })
+--   local g = panel:Group("General")
+--   g:Toggle{ ... }
+--   panel:Finalize()
 
 local PREFIX = "|cffc9a84c[LuckyRichSettings]|r"
 local devLog -- forward declaration; initialized lazily
@@ -116,6 +138,22 @@ local function firstRealSetting(group)
         if not s.isSection then return s end
     end
     return nil
+end
+
+-- Row state (`checked` on Toggle, `value` on Slider) may be a plain value or a
+-- zero-arg function. Function-valued state is re-read every time the panel is
+-- shown, so changes made while it was closed (slash commands, minimap toggles)
+-- can't leave stale controls. MultiSelect's isChecked already works this way.
+local function resolveValue(v)
+    if type(v) == "function" then return v() end
+    return v
+end
+
+local function ensureGroupBuilt(group)
+    local build = group and group._contents
+    if not build then return end
+    group._contents = nil -- cleared first so a build error can't rerun and double-add rows
+    build(group)
 end
 
 local function makeNewBadge(parent, anchor)
@@ -547,6 +585,26 @@ local function applyEnabled(setting)
     end
 end
 
+-- Re-read function-valued row state across all built groups. SetChecked and
+-- SetValue don't fire OnClick/onToggle, and a slider's OnValueChanged only
+-- fires when the value actually differs, so this never causes spurious writes.
+local function refreshLiveValues(builder)
+    for _, g in ipairs(builder.groups) do
+        for _, s in ipairs(g.settings) do
+            if s.getChecked and s.checkbox then
+                s.checkbox:SetChecked(s.getChecked() and true or false)
+            end
+            if s.getValue and s.slider then
+                s.slider:SetValue(s.getValue())
+            end
+        end
+        -- Second pass: parents are fresh now, so dependent rows re-lock.
+        for _, s in ipairs(g.settings) do
+            if s.parentSetting then applyEnabled(s) end
+        end
+    end
+end
+
 local function attachHover(setting, group, extraFrames)
     local function onEnter()
         group.panel:UpdateAbout(setting)
@@ -612,7 +670,7 @@ function RichGroup:Toggle(opts)
     local cb = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
     cb:SetSize(20, 20)
     cb:SetPoint("LEFT", indent, 0)
-    cb:SetChecked(opts.checked)
+    cb:SetChecked(resolveValue(opts.checked))
 
     local label = row:CreateFontString(nil, "OVERLAY")
     label:SetFont(R_FONT, 12, "")
@@ -640,6 +698,7 @@ function RichGroup:Toggle(opts)
         checkbox = cb,
         parent   = opts.parent,
         disabled = opts.disabled,
+        getChecked = type(opts.checked) == "function" and opts.checked or nil,
     }
 
     table.insert(self.settings, setting)
@@ -685,6 +744,8 @@ function RichGroup:Slider(opts)
         makeNewBadge(row, label)
     end
 
+    local initialValue = resolveValue(opts.value)
+
     local slider = CreateFrame("Slider", "LuckySettings_RichSlider_" .. (opts.key or opts.label),
         row, "OptionsSliderTemplate")
     slider:SetWidth(160)
@@ -692,7 +753,7 @@ function RichGroup:Slider(opts)
     slider:SetMinMaxValues(opts.min, opts.max)
     slider:SetValueStep(opts.step or 1)
     slider:SetObeyStepOnDrag(true)
-    slider:SetValue(opts.value)
+    slider:SetValue(initialValue)
     slider.Low:SetText(opts.min)
     slider.High:SetText(opts.max)
 
@@ -700,7 +761,7 @@ function RichGroup:Slider(opts)
     valueText:SetFont(R_FONT, 12, "")
     valueText:SetPoint("LEFT", slider, "RIGHT", 8, 0)
     valueText:SetTextColor(R.accentLight[1], R.accentLight[2], R.accentLight[3])
-    valueText:SetText(tostring(opts.value) .. (opts.suffix or ""))
+    valueText:SetText(tostring(initialValue) .. (opts.suffix or ""))
 
     local setting = {
         type      = "Slider",
@@ -718,6 +779,7 @@ function RichGroup:Slider(opts)
         rowHover = hl,
         slider   = slider,
         parent   = opts.parent,
+        getValue = type(opts.value) == "function" and opts.value or nil,
     }
 
     slider:SetScript("OnValueChanged", function(_, val)
@@ -1171,7 +1233,13 @@ end
 
 -- ─── Group / Panel ────────────────────────────────────────────────────────────
 
-function RichBuilder:Group(name, opts)
+--- Add a navigation group. `contents(group)` is optional and builds the rows
+--- lazily, the first time the group is activated while the panel is shown.
+--- `opts` may be omitted entirely: Group(name, function(g) ... end).
+function RichBuilder:Group(name, opts, contents)
+    if type(opts) == "function" then
+        contents, opts = opts, nil
+    end
     opts = opts or {}
 
     local content = CreateFrame("Frame", nil, self.center)
@@ -1200,6 +1268,7 @@ function RichBuilder:Group(name, opts)
         showAbout  = self.about and opts.showAbout ~= false,
         settings   = {},
         byLabel    = {},
+        _contents  = contents,
     }, RichGroup)
 
     table.insert(self.groups, group)
@@ -1231,6 +1300,8 @@ function RichBuilder:SetActiveGroup(group)
         styleNav(self.activeGroup.navButton, false)
     end
     self.activeGroup = group
+    -- While hidden, defer to the canvas OnShow hook so login stays cheap.
+    if self.canvas:IsShown() then ensureGroupBuilt(group) end
     self:_setAboutVisibility(group.showAbout)
     group.content:Show()
     styleNav(group.navButton, true)
@@ -1264,7 +1335,13 @@ end
 -- `since` version in `recentVersions` and prepends a "What's New" group that
 -- mirrors them as clickable cards. Cards activate the source group on click.
 function RichBuilder:Finalize()
+    if self._finalized then return end
+    self._finalized = true
     if not self.recentVersions and not self.minVersion then return end
+
+    -- What's New scans real rows for `since` flags, so pending group lambdas
+    -- must run now. Panels without minVersion/recentVersions keep full laziness.
+    for _, g in ipairs(self.groups) do ensureGroupBuilt(g) end
 
     local grouped = {}
     for _, g in ipairs(self.groups) do
@@ -1319,10 +1396,13 @@ LuckySettings.Rich = {
 }
 
 --- Create a rich settings panel with grouped navigation and an optional About rail.
+--- When `contents` is given, it runs once on first show with the builder as its
+--- argument, and Finalize() is called automatically afterwards.
 ---@param displayName string
 ---@param opts table?  { addonFolder?: string, imagesRoot?: string, showAbout?: boolean }
+---@param contents fun(panel: table)?  builds the groups and rows lazily
 ---@return table builder
-function LuckySettings:NewRichPanel(displayName, opts)
+function LuckySettings:NewRichPanel(displayName, opts, contents)
     Log("NewRichPanel called for:", displayName)
     opts = opts or {}
 
@@ -1396,6 +1476,7 @@ function LuckySettings:NewRichPanel(displayName, opts)
         center         = center,
         about          = about,
         groups         = {},
+        _contents      = contents,
     }, RichBuilder)
 
     if showAbout then buildAbout(builder) end
@@ -1408,8 +1489,17 @@ function LuckySettings:NewRichPanel(displayName, opts)
     end)
 
     canvas:HookScript("OnShow", function()
+        if builder._contents then
+            local build = builder._contents
+            builder._contents = nil -- cleared first so a build error can't rerun and double-add rows
+            Log("Building lazy contents for:", displayName)
+            build(builder)
+            builder:Finalize()
+        end
         if builder._onOpen then builder._onOpen() end
+        refreshLiveValues(builder)
         if builder.activeGroup then
+            ensureGroupBuilt(builder.activeGroup)
             builder:_setAboutVisibility(builder.activeGroup.showAbout)
             if builder.activeGroup.showAbout then
                 aboutShow(builder, builder.hoveredSetting or firstRealSetting(builder.activeGroup))
