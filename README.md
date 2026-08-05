@@ -19,6 +19,7 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 - **LuckyProfiles** — turn any config table into a copy-paste share string and read it back, with a checksum so corrupted strings fail cleanly. Includes ready-made export and import panels.
 - **LuckyItem** — load item and spell data reliably, with a callback that only fires once the name, icon and link have actually arrived from the server. Results are cached for the session, with a batch helper for flicker-free list rendering.
 - **LuckyMinimap** — draggable minimap buttons with saved position and visibility state, plus one-call registration in Blizzard's AddOn Compartment, no extra library required.
+- **LuckyBugs** — watches for errors in any Lucky Phil addon and offers to walk you through reporting them on the Discord, with a copy-ready report.
 - **LuckyLog** — gated debug loggers that stay silent until an addon's debug flag is on.
 - **LuckyDeps** — optional dependency checks with version validation.
 - **LuckySound** — helpers for addon sound files and built-in WoW sound kit entries.
@@ -45,7 +46,7 @@ externals:
   YourAddon/Luckys_Utils: https://github.com/LuckyPhilDev/LuckyUtils
 ```
 
-The library loads before your addon code. All globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`) are available after `ADDON_LOADED` fires for your addon.
+The library loads before your addon code. All globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBugs`) are available after `ADDON_LOADED` fires for your addon.
 
 ---
 
@@ -341,6 +342,24 @@ end)
 
 -- Prints only when devMode is true
 DevLog("Player entered zone:", GetZoneText())
+```
+
+---
+
+### LuckyBugs
+
+Nothing to wire up. Any Lua error raised inside a Lucky Phil addon is caught, de-duplicated, and offered up for reporting, whether or not the player has Lua errors turned on in the game's settings. Errors from other authors' addons are ignored and never stored.
+
+The player sees a prompt asking whether they want to report it, at most three times per session and never during combat. Accepting opens a window with the Discord link and a copy-ready report: addon and library versions, game build, locale, the error, and the stack.
+
+| Command | Action |
+|---|---|
+| `/luckybugs` | Show the captured errors and their reports |
+| `/luckybugs on` / `/luckybugs off` | Turn the report prompt on or off |
+
+```lua
+-- Open the report window on the newest captured error
+LuckyBugs:Show()
 ```
 
 ---
