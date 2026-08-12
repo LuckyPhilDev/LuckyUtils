@@ -1,3 +1,8 @@
+## [1.7.3] - 2026-08-12
+
+### Improved
+- Updated for World of Warcraft patch 12.1.
+
 ## [1.7.2] - 2026-07-31
 
 ### Improved
