@@ -4,7 +4,7 @@
 -- The error handler is installed as this file loads, before the rest of the
 -- library, so errors raised while other addons are still loading are caught.
 
-local DISCORD_URL = "https://discord.gg/87HRHcAYP"
+local DISCORD_URL = "https://discord.gg/ptTtYyAjdZ"
 
 local PANEL_W, PANEL_H = 540, 420
 local SAVED_LOG_SIZE   = 10
