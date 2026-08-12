@@ -1,4 +1,8 @@
-## [1.7.3] - 2026-08-12
+## [1.8.0] - 2026-08-12
+
+### Added
+- Lua errors raised by Lucky addons are now caught and shown in a panel that offers to report them on the Discord, with recent errors kept between sessions.
+- Settings panels and groups can now build their contents the first time they are shown rather than up front, and toggles and sliders can read their value each time a panel opens, so a setting changed elsewhere never shows stale.
 
 ### Improved
 - Updated for World of Warcraft patch 12.1.
