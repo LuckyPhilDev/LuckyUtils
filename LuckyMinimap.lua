@@ -86,12 +86,16 @@ local function publishBroker(opts)
     if not ldb then return end
 
     -- The registration name is the stable id a display addon saves against, so it
-    -- stays the frame name; label is the cosmetic one and may be prettied later.
-    -- tocname is how the spec lets a display addon find the real addon behind the
-    -- object, which is what fills in its version and notes rather than blanks.
+    -- stays the frame name. Everything a display addon shows a player comes from
+    -- the TOC instead: tocname is the spec's way of pointing at the real addon, and
+    -- one folder name buys both the title it lists us under and the version beside
+    -- it. Without it a display addon falls back to the frame name and a blank
+    -- version, which is how these read before they were named.
+    local title = opts.tocname and C_AddOns.GetAddOnMetadata(opts.tocname, "Title")
+
     ldb:NewDataObject(opts.name, {
         type          = "launcher",
-        label         = opts.text or opts.name,
+        label         = opts.text or title or opts.name,
         tocname       = opts.tocname,
         icon          = opts.icon,
         OnClick       = opts.onClick,
@@ -116,8 +120,9 @@ end)
 --- Create a minimap button.
 ---@param opts table
 ---   opts.name         (string)        Global frame name (must be unique per addon)
----   opts.text         (string)        Label shown by display addons (default: opts.name)
----   opts.tocname      (string)        Addon folder name, so display addons can read its TOC
+---   opts.tocname      (string)        Addon folder name. Display addons read the title
+---                                     and version out of its TOC, so pass this.
+---   opts.text         (string)        Overrides the TOC title as the displayed label
 ---   opts.icon         (string|number) Texture path or fileID for the button icon
 ---   opts.dbKey        (string)        Key within the addon's SavedVariables for minimap state
 ---   opts.db           (table)         Reference to the addon's SavedVariables table
