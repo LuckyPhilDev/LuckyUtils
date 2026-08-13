@@ -87,9 +87,12 @@ local function publishBroker(opts)
 
     -- The registration name is the stable id a display addon saves against, so it
     -- stays the frame name; label is the cosmetic one and may be prettied later.
+    -- tocname is how the spec lets a display addon find the real addon behind the
+    -- object, which is what fills in its version and notes rather than blanks.
     ldb:NewDataObject(opts.name, {
         type          = "launcher",
         label         = opts.text or opts.name,
+        tocname       = opts.tocname,
         icon          = opts.icon,
         OnClick       = opts.onClick,
         OnTooltipShow = opts.tooltip,
@@ -114,6 +117,7 @@ end)
 ---@param opts table
 ---   opts.name         (string)        Global frame name (must be unique per addon)
 ---   opts.text         (string)        Label shown by display addons (default: opts.name)
+---   opts.tocname      (string)        Addon folder name, so display addons can read its TOC
 ---   opts.icon         (string|number) Texture path or fileID for the button icon
 ---   opts.dbKey        (string)        Key within the addon's SavedVariables for minimap state
 ---   opts.db           (table)         Reference to the addon's SavedVariables table

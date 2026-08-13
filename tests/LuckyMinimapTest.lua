@@ -50,6 +50,7 @@ local function buildOptions(name)
     return {
         name    = name,
         text    = "Lucky's Test",
+        tocname = "Luckys_Test",
         icon    = "Interface\\Icons\\INV_Misc_Bag_36",
         dbKey   = "minimap",
         db      = {},
@@ -102,6 +103,7 @@ local launcher = registered["LuckysTestMinimapButton"]
 assert(launcher, "registered under the frame name, the id a display addon saves")
 assert(launcher.type == "launcher", "declared the LDB launcher type")
 assert(launcher.label == "Lucky's Test", "labelled with the readable name")
+assert(launcher.tocname == "Luckys_Test", "named the addon folder so its version and notes can be read")
 assert(launcher.icon == options.icon, "carried the button icon across")
 assert(launcher.OnTooltipShow == options.tooltip, "reused the button tooltip")
 
