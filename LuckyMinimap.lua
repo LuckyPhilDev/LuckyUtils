@@ -73,9 +73,56 @@ local function SetButtonPosition(button, angle)
     button:SetPoint("CENTER", Minimap, "CENTER", x, y)
 end
 
+-- Display addons (Titan Panel, Bazooka, ChocolateBar, ElvUI) find an addon through
+-- LibDataBroker, never by reading the minimap or Blizzard's addon compartment, so a
+-- launcher object is the only thing that puts us on their bars. None of it ships
+-- with us: LDB arrives with whichever display addon the player runs, and with no
+-- display addon there is nobody to publish to.
+local pendingBrokers = {}
+local loggedIn = false
+
+local function publishBroker(opts)
+    local ldb = LibStub and LibStub:GetLibrary("LibDataBroker-1.1", true)
+    if not ldb then return end
+
+    -- The registration name is the stable id a display addon saves against, so it
+    -- stays the frame name. Everything a display addon shows a player comes from
+    -- the TOC instead: tocname is the spec's way of pointing at the real addon, and
+    -- one folder name buys both the title it lists us under and the version beside
+    -- it. Without it a display addon falls back to the frame name and a blank
+    -- version, which is how these read before they were named.
+    local title = opts.tocname and C_AddOns.GetAddOnMetadata(opts.tocname, "Title")
+
+    ldb:NewDataObject(opts.name, {
+        type          = "launcher",
+        label         = opts.text or title or opts.name,
+        tocname       = opts.tocname,
+        icon          = opts.icon,
+        OnClick       = opts.onClick,
+        OnTooltipShow = opts.tooltip,
+    })
+end
+
+-- Those addons load in their own order, so LibStub may not exist yet when a button
+-- is built during ADDON_LOADED. Waiting for login costs nothing: a display addon
+-- that has already swept its registry picks up a late arrival from LDB's own
+-- created-object callback.
+local brokerFrame = CreateFrame("Frame")
+brokerFrame:RegisterEvent("PLAYER_LOGIN")
+brokerFrame:SetScript("OnEvent", function()
+    loggedIn = true
+    for _, opts in ipairs(pendingBrokers) do
+        publishBroker(opts)
+    end
+    pendingBrokers = {}
+end)
+
 --- Create a minimap button.
 ---@param opts table
 ---   opts.name         (string)        Global frame name (must be unique per addon)
+---   opts.tocname      (string)        Addon folder name. Display addons read the title
+---                                     and version out of its TOC, so pass this.
+---   opts.text         (string)        Overrides the TOC title as the displayed label
 ---   opts.icon         (string|number) Texture path or fileID for the button icon
 ---   opts.dbKey        (string)        Key within the addon's SavedVariables for minimap state
 ---   opts.db           (table)         Reference to the addon's SavedVariables table
@@ -185,6 +232,13 @@ function LuckyMinimap:Create(opts)
     --- Re-run positioning. Call after the minimap may have changed size/shape.
     function btn:Reposition()
         SetButtonPosition(self, state.minimapPos)
+    end
+
+    -- A button built after login (a retry, say) has missed the sweep above.
+    if loggedIn then
+        publishBroker(opts)
+    else
+        pendingBrokers[#pendingBrokers + 1] = opts
     end
 
     return btn
