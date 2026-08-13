@@ -1,3 +1,8 @@
+## [1.8.1] - 2026-08-13
+
+### Added
+- Minimap buttons now also register with display addons such as Titan Panel, Bazooka and ChocolateBar, so an addon can sit on a panel instead of the minimap. Addons that pass their folder name are listed under the title and version read from their TOC.
+
 ## [1.8.0] - 2026-08-12
 
 ### Added
