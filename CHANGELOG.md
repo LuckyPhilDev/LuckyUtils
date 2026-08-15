@@ -1,3 +1,8 @@
+## [1.9.1] - 2026-08-15
+
+### Improved
+- The promo section ships its own artwork for each addon, in place of borrowed game icons. The files are in `Media` as `promo-<addon>.tga`, so an addon's minimap button can point at the same art.
+
 ## [1.9.0] - 2026-08-15
 
 ### Added
