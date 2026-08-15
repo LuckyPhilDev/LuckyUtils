@@ -19,6 +19,7 @@ LuckyUI.C = {
     goldPrimary = { 1.000, 0.820, 0.000 },
     goldAccent  = { 0.788, 0.659, 0.298 },
     goldMuted   = { 0.545, 0.451, 0.251 },
+    goldIcon    = { 1.000, 0.824, 0.392 },
 
     textLight   = { 0.910, 0.863, 0.784 },
     textMuted   = { 0.541, 0.494, 0.416 },
@@ -179,6 +180,62 @@ function LuckyUI.CreateButton(parent, text, w, h, variant)
         btn:SetScript("OnLeave", function()
             btn:SetBackdropBorderColor(c.borderDark[1], c.borderDark[2], c.borderDark[3])
         end)
+    end
+
+    return btn
+end
+
+--- Create a small icon button: gold tinted art, additive hover, dimmed when disabled.
+--
+-- opts fields:
+--   icon     (string)  Texture path
+--   size     (number)  Square size, default 20
+--   tooltip  (string|function)  Text, or fn(GameTooltip, button) for a live one
+--   anchor   (string)  Tooltip anchor, default "ANCHOR_RIGHT"
+--   color    (table)   Icon tint, default LuckyUI.C.goldIcon
+--   texCoord (table)   { left, right, top, bottom }, to crop the border baked
+--                      into Interface\Icons art
+--
+-- The returned button gains SetIconColor(r, g, b, a) for callers that tint it
+-- by state, and SetIconDesaturated(bool).
+function LuckyUI.CreateIconButton(parent, opts)
+    local size = opts.size or 20
+    local btn = CreateFrame("Button", nil, parent)
+    btn:SetSize(size, size)
+    btn:SetNormalTexture(opts.icon)
+    btn:SetHighlightTexture(opts.icon, "ADD")
+    btn:SetDisabledTexture(opts.icon)
+
+    local textures = { btn:GetNormalTexture(), btn:GetHighlightTexture(), btn:GetDisabledTexture() }
+    if opts.texCoord then
+        for _, t in ipairs(textures) do t:SetTexCoord(unpack(opts.texCoord)) end
+    end
+
+    function btn:SetIconColor(r, g, b, a)
+        self:GetNormalTexture():SetVertexColor(r, g, b, a or 1)
+    end
+
+    function btn:SetIconDesaturated(desaturated)
+        self:GetNormalTexture():SetDesaturated(desaturated)
+    end
+
+    local color = opts.color or LuckyUI.C.goldIcon
+    btn:SetIconColor(color[1], color[2], color[3], color[4])
+    btn:GetHighlightTexture():SetVertexColor(color[1], color[2], color[3])
+    btn:GetHighlightTexture():SetAlpha(0.35)
+    btn:GetDisabledTexture():SetVertexColor(0.35, 0.35, 0.35)
+
+    if opts.tooltip then
+        btn:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, opts.anchor or "ANCHOR_RIGHT")
+            if type(opts.tooltip) == "function" then
+                opts.tooltip(GameTooltip, self)
+            else
+                GameTooltip:SetText(opts.tooltip)
+            end
+            GameTooltip:Show()
+        end)
+        btn:SetScript("OnLeave", GameTooltip_Hide)
     end
 
     return btn
