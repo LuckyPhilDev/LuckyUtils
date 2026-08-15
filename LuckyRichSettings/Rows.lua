@@ -561,6 +561,26 @@ function RichGroup:BottomLink(opts)
     return self
 end
 
+--- An empty bottom row of the given height, for callers that draw their own
+--- contents. Returns the frame rather than the group.
+---@param height number
+---@return Frame
+function RichGroup:BottomFrame(height)
+    self.bottomSettings = self.bottomSettings or {}
+    local frame = CreateFrame("Frame", nil, self.content)
+    frame:SetHeight(height)
+
+    local prev = self.bottomSettings[#self.bottomSettings]
+    if prev then
+        frame:SetPoint("TOPLEFT",  prev.row, "BOTTOMLEFT",  0, 0)
+        frame:SetPoint("TOPRIGHT", prev.row, "BOTTOMRIGHT", 0, 0)
+    end
+
+    table.insert(self.bottomSettings, { row = frame })
+    relayoutBottom(self)
+    return frame
+end
+
 function RichGroup:BottomSection(name)
     self.bottomSettings = self.bottomSettings or {}
     local frame = CreateFrame("Frame", nil, self.content)

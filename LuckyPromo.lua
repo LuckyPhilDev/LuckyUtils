@@ -1,11 +1,20 @@
 -- LuckyPromo: "More from Lucky Phil" cross-promotion section for settings panels.
 -- Lists Lucky Phil addons the user does not have installed, with a click-to-copy
 -- CurseForge link. Addons already installed (or the addon hosting the section)
--- are never shown, so the section disappears once everything is installed.
+-- are never shown, so only the Discord link remains once everything is
+-- installed.
 
 LuckyPromo = LuckyPromo or {}
 
 local SECTION_TITLE = "More from Lucky Phil"
+
+-- Always first in the icon row, whatever else is shown.
+local DISCORD = {
+    name = "Discord",
+    desc = "Get support, report a bug or suggest a feature.",
+    icon = "Interface\\AddOns\\Luckys_Utils\\Media\\discord.tga",
+    url  = "https://discord.gg/ptTtYyAjdZ",
+}
 
 -- Published addons, promoted everywhere they are not installed.
 local ADDONS = {
@@ -13,30 +22,34 @@ local ADDONS = {
         folder = "Luckys_Grab_Bag",
         name   = "Lucky's Grab-bag",
         desc   = "A collection of small quality-of-life features.",
+        icon   = "Interface\\Icons\\INV_Misc_Bag_36",
         url    = "https://www.curseforge.com/wow/addons/luckys-grab-bag",
     },
     {
         folder = "Luckys_Loot_Wishlist",
         name   = "Lucky's Loot Wishlist",
         desc   = "Track loot from the Adventure Guide and manage a per-character wishlist.",
+        icon   = "Interface\\Icons\\INV_Misc_Spyglass_03",
         url    = "https://www.curseforge.com/wow/addons/luckys-loot-wishlist",
     },
     {
         folder = "Luckys_Warbank_Stockist",
         name   = "Lucky's Warbank Stockist",
         desc   = "Automatically manages item quantities between your bags and the Warband Bank.",
+        icon   = "Interface\\Icons\\achievement_guildperk_mobilebanking",
         url    = "https://www.curseforge.com/wow/addons/luckys-warbank-stockist",
     },
     {
         folder = "Luckys_Character_Mount",
         name   = "Lucky's Character Mount",
         desc   = "Summons a random racial or class mount. Per-character list, auto-populated.",
+        icon   = 136103,
         url    = "https://www.curseforge.com/wow/addons/luckys-character-mount",
     },
 }
 
 StaticPopupDialogs["LUCKY_PROMO_COPY_URL"] = {
-    text         = "Copy the CurseForge link:",
+    text         = "Copy the link:",
     button1      = CLOSE,
     hasEditBox   = 1,
     editBoxWidth = 280,
@@ -159,21 +172,63 @@ function LuckyPromo:AddToBuilder(builder, selfFolder)
     builder.lastAnchor = anchor  -- keep the builder's anchor chain intact
 end
 
---- Append bottom rows to a LuckyRichSettings group (same style as the
---- version info and Discord rows).
+local ICON_SIZE = 34
+local ICON_GAP  = 8
+local ICON_ROW_H = ICON_SIZE + 12
+
+-- One icon button in the promo row. Name and description live in the tooltip;
+-- clicking opens the copy-link popup.
+local function CreateIconButton(parent, entry, index)
+    local C = LuckyUI.C
+
+    local btn = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    btn:SetSize(ICON_SIZE, ICON_SIZE)
+    btn:SetPoint("LEFT", parent, "LEFT", 14 + (index - 1) * (ICON_SIZE + ICON_GAP), 0)
+    btn:SetBackdrop(LuckyUI.Backdrop)
+    btn:SetBackdropColor(C.bgInput[1], C.bgInput[2], C.bgInput[3], 0.6)
+    btn:SetBackdropBorderColor(C.borderDark[1], C.borderDark[2], C.borderDark[3])
+
+    local tex = btn:CreateTexture(nil, "ARTWORK")
+    tex:SetPoint("TOPLEFT", 3, -3)
+    tex:SetPoint("BOTTOMRIGHT", -3, 3)
+    tex:SetTexture(entry.icon)
+    -- Interface\Icons art carries a baked-in border; the Discord tile does not.
+    if type(entry.icon) ~= "string" or entry.icon:find("Icons\\") then
+        tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    end
+
+    btn:SetScript("OnEnter", function(self)
+        self:SetBackdropBorderColor(C.goldAccent[1], C.goldAccent[2], C.goldAccent[3])
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(entry.name, C.goldPrimary[1], C.goldPrimary[2], C.goldPrimary[3])
+        GameTooltip:AddLine(entry.desc, 1, 1, 1, true)
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine("Click for the link", 0.6, 0.6, 0.6)
+        GameTooltip:Show()
+    end)
+    btn:SetScript("OnLeave", function(self)
+        self:SetBackdropBorderColor(C.borderDark[1], C.borderDark[2], C.borderDark[3])
+        GameTooltip:Hide()
+    end)
+    btn:SetScript("OnClick", function() LuckyPromo:ShowCopyPopup(entry.url) end)
+
+    return btn
+end
+
+--- Append the section to a LuckyRichSettings group as a single row of icons:
+--- Discord first, then every promoted addon that is not installed.
 ---@param group table  A RichGroup from NewRichPanel
 ---@param selfFolder string
 function LuckyPromo:AddToRichGroup(group, selfFolder)
-    local missing = self:Missing(selfFolder)
-    if #missing == 0 then return end
+    local entries = { DISCORD }
+    for _, addon in ipairs(self:Missing(selfFolder)) do
+        entries[#entries + 1] = addon
+    end
 
     group:BottomSection(SECTION_TITLE)
-    for _, addon in ipairs(missing) do
-        group:BottomLink({
-            label   = addon.name,
-            value   = "|A:chatframe-button-copy:11:11|a CurseForge",
-            onClick = function() LuckyPromo:ShowCopyPopup(addon.url) end,
-        })
+    local row = group:BottomFrame(ICON_ROW_H)
+    for i, entry in ipairs(entries) do
+        CreateIconButton(row, entry, i)
     end
 end
 
