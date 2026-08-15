@@ -1,4 +1,4 @@
--- luacheck: globals CreateFrame LuckySettings LuckyUI
+-- luacheck: globals CreateFrame LuckySettings LuckyUI C_AddOns
 
 -- Covers where LuckyRichSettings puts rows: the What's New list folds into the
 -- first group as a scrolling region, and that region has to end above the
@@ -50,8 +50,13 @@ end
 
 CreateFrame = function(kind, _, parent) return newFrame(kind, parent) end
 
-LuckyUI = stub({ Backdrop = {} })
+LuckyUI = stub({
+    Backdrop = {},
+    C = { goldIcon = { 1, 1, 1 } },
+    CreateIconButton = function(parent) return newFrame("Button", parent) end,
+})
 LuckySettings = stub({ Register = function() return "category" end })
+C_AddOns = stub({ GetAddOnMetadata = function() return "1.0.0" end })
 
 local ns = {}
 loadfile("LuckyRichSettings/Core.lua")("Luckys_Utils", ns)
@@ -59,7 +64,14 @@ loadfile("LuckyRichSettings/About.lua")("Luckys_Utils", ns)
 loadfile("LuckyRichSettings/Rows.lua")("Luckys_Utils", ns)
 loadfile("LuckyRichSettings/Panel.lua")("Luckys_Utils", ns)
 
-local panel = LuckySettings:NewRichPanel("Test Addon", { minVersion = "1.2.0" })
+local devMode = false
+local panel = LuckySettings:NewRichPanel("Test Addon", {
+    minVersion = "1.2.0",
+    devMode    = {
+        checked  = function() return devMode end,
+        onToggle = function(v) devMode = v end,
+    },
+})
 
 local general = panel:Group("General")
 general:Toggle({ label = "Dev Mode", checked = false })
@@ -119,5 +131,17 @@ general:BottomLabel({ label = "Test Addon", value = "v1.3.0" })
 
 assert(general.fillHolder.points.BOTTOM.rel == general.bottomSettings[1].row,
     "the list ends above the first bottom row")
+
+-------------------------------------------------------------------------------
+-- A host group already named for the list is not given the heading twice.
+-------------------------------------------------------------------------------
+local named = LuckySettings:NewRichPanel("Named Addon", { minVersion = "1.2.0" })
+local host = named:Group("What's New")
+named:Group("Vendors"):Toggle({ label = "Flag Decor", checked = false, since = "1.3.0" })
+named:Finalize()
+
+for _, s in ipairs(host.settings) do
+    assert(s.name ~= "What's New", "the host group does not repeat its own name as a section")
+end
 
 print("LuckyRichSettings tests passed")

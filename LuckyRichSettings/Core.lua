@@ -5,7 +5,7 @@
 --
 -- Usage (contents lambdas — preferred):
 --   LuckySettings:NewRichPanel("My Addon", {
---       addonFolder = "MyAddon_Folder",  -- for resolving image paths
+--       addonFolder = "MyAddon_Folder",  -- image paths, and the version shown by the title
 --       imagesRoot  = "images",          -- subfolder under the addon
 --   }, function(panel)
 --       panel:Group("General", function(g)   -- opts table may sit between name and lambda

@@ -16,8 +16,10 @@ local buildAbout        = Rich.buildAbout
 local aboutShow         = Rich.aboutShow
 local hideImagePreview  = Rich.hideImagePreview
 local refreshLiveValues = Rich.refreshLiveValues
+local resolveValue      = Rich.resolveValue
 
 local PREFIX = "|cffc9a84c[LuckyRichSettings]|r"
+local WHATS_NEW = "What's New"
 local devLog -- forward declaration; initialized lazily
 
 local function Log(...)
@@ -217,7 +219,8 @@ function RichBuilder:Finalize()
     self.whatsNewGroup = host
     if #grouped == 0 then return end
 
-    host:Section("What's New")
+    -- A group named for the list does not need the heading repeated inside it.
+    if host.name ~= WHATS_NEW then host:Section(WHATS_NEW) end
     host:BeginScroll(0)
 
     for _, gn in ipairs(grouped) do
@@ -240,13 +243,95 @@ function RichBuilder:Open()
     LuckySettings:Open(self.category)
 end
 
+-- ─── Title bar ────────────────────────────────────────────────────────────────
+
+-- The addon's own version sits beside its name; the library version it is
+-- running on only matters when someone is filing a bug, so it hides in the
+-- tooltip rather than taking a row of its own.
+local function makeTitleVersion(titleBar, titleL, version)
+    local hit = CreateFrame("Frame", nil, titleBar)
+    hit:SetPoint("LEFT", titleL, "RIGHT", 6, -1)
+
+    local text = hit:CreateFontString(nil, "OVERLAY")
+    text:SetFont(R_FONT, 11, "")
+    text:SetPoint("LEFT")
+    text:SetText("(v" .. version .. ")")
+    text:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
+    hit:SetSize(text:GetStringWidth(), 18)
+
+    hit:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
+        GameTooltip:AddLine("Version " .. version)
+        GameTooltip:AddLine("Lucky's Utils v"
+            .. (C_AddOns.GetAddOnMetadata("Luckys_Utils", "Version") or "?"), 0.6, 0.6, 0.6)
+        GameTooltip:Show()
+    end)
+    hit:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    return hit
+end
+
+-- Settings every addon in the suite has, offered as title bar buttons so they
+-- don't each need a General group holding two rows.
+local TITLE_TOGGLES = {
+    { key = "devMode", label = "Dev Mode",
+      icon = "Interface\\AddOns\\Luckys_Utils\\Media\\dev-mode.tga" },
+    { key = "minimapButton", label = "Minimap Button",
+      icon = "Interface\\Icons\\INV_Misc_Map_01", cropBorder = true },
+}
+
+local TITLE_TOGGLE_OFF = { 0.34, 0.32, 0.28, 0.85 }
+
+local function makeTitleToggle(titleBar, spec, opts)
+    local checked
+
+    local btn = LuckyUI.CreateIconButton(titleBar, {
+        icon     = spec.icon,
+        size     = 22,
+        anchor   = "ANCHOR_BOTTOM",
+        texCoord = spec.cropBorder and { 0.08, 0.92, 0.08, 0.92 } or nil,
+        tooltip  = function(tooltip)
+            tooltip:AddLine(opts.label or spec.label)
+            if checked then
+                tooltip:AddLine("On", R.success[1], R.success[2], R.success[3])
+            else
+                tooltip:AddLine("Off", 0.6, 0.6, 0.6)
+            end
+            if opts.desc then tooltip:AddLine(opts.desc, 0.6, 0.6, 0.6, true) end
+        end,
+    })
+
+    -- Vertex colour multiplies over the texture, so tinting it gold undoes the
+    -- desaturation: the off state has to be painted grey outright.
+    local function paint()
+        local tint = checked and LuckyUI.C.goldIcon or TITLE_TOGGLE_OFF
+        btn:SetIconDesaturated(not checked)
+        btn:SetIconColor(tint[1], tint[2], tint[3], tint[4])
+    end
+    local function readState()
+        checked = resolveValue(opts.checked) and true or false
+        paint()
+    end
+    readState()
+
+    btn:HookScript("OnShow", readState)
+    btn:SetScript("OnClick", function(self)
+        checked = not checked
+        paint()
+        if opts.onToggle then opts.onToggle(checked) end
+        self:GetScript("OnEnter")(self)
+    end)
+
+    return btn
+end
+
 -- ─── Factory ──────────────────────────────────────────────────────────────────
 
 --- Create a rich settings panel with grouped navigation and an optional About rail.
 --- When `contents` is given, it runs once on first show with the builder as its
 --- argument, and Finalize() is called automatically afterwards.
 ---@param displayName string
----@param opts table?  { addonFolder?: string, imagesRoot?: string, showAbout?: boolean }
+---@param opts table?  { addonFolder?: string, imagesRoot?: string, showAbout?: boolean, version?: string,
+---                      devMode?: table, minimapButton?: table }  -- title bar toggles: { checked, onToggle, label?, desc? }
 ---@param contents fun(panel: table)?  builds the groups and rows lazily
 ---@return table builder
 function LuckySettings:NewRichPanel(displayName, opts, contents)
@@ -281,11 +366,23 @@ function LuckySettings:NewRichPanel(displayName, opts, contents)
     titleL:SetText(displayName)
     titleL:SetTextColor(R.accentLight[1], R.accentLight[2], R.accentLight[3])
 
-    local titleR = titleBar:CreateFontString(nil, "OVERLAY")
-    titleR:SetFont(R_FONT, 11, "")
-    titleR:SetPoint("RIGHT", -14, 0)
-    titleR:SetText("ADDON SETTINGS")
-    titleR:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
+    local addonVersion = opts.version
+        or (opts.addonFolder and C_AddOns.GetAddOnMetadata(opts.addonFolder, "Version"))
+    if addonVersion then makeTitleVersion(titleBar, titleL, addonVersion) end
+
+    local anchor
+    for _, spec in ipairs(TITLE_TOGGLES) do
+        local toggle = opts[spec.key]
+        if toggle then
+            local btn = makeTitleToggle(titleBar, spec, toggle)
+            if anchor then
+                btn:SetPoint("RIGHT", anchor, "LEFT", -6, 0)
+            else
+                btn:SetPoint("RIGHT", -14, 0)
+            end
+            anchor = btn
+        end
+    end
 
     -- Navigation and content sit under the title bar. The About rail is
     -- optional so list-heavy panels can use the reclaimed width.

@@ -774,3 +774,4 @@ function RichGroup:Card(opts)
 end
 
 Rich.refreshLiveValues = refreshLiveValues
+Rich.resolveValue      = resolveValue
