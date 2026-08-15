@@ -156,6 +156,16 @@ local cb = LuckyUI.CreateCheckbox(parent, 16)
 -- Horizontal divider with optional label
 local div = LuckyUI.CreateDivider(parent, "Section Title")
 
+-- Gold icon button. tooltip is text, or fn(GameTooltip, button) for a live one.
+local icon = LuckyUI.CreateIconButton(parent, {
+    icon     = "Interface\\Icons\\INV_Misc_Map_01",
+    size     = 22,
+    tooltip  = "Minimap Button",
+    texCoord = { 0.08, 0.92, 0.08, 0.92 },  -- crops the border baked into Icons art
+})
+icon:SetScript("OnClick", ToggleMinimapButton)
+-- Adds icon:SetIconColor(r, g, b, a) and icon:SetIconDesaturated(bool)
+
 -- Drag-to-move with SavedVariables persistence
 LuckyUI.EnableDrag(myFrame, {
     db      = MyAddonDB,

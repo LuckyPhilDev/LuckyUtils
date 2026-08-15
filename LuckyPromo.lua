@@ -46,6 +46,13 @@ local ADDONS = {
         icon   = 136103,
         url    = "https://www.curseforge.com/wow/addons/luckys-character-mount",
     },
+    {
+        folder = "Luckys_Wardrobe",
+        name   = "Lucky's Wardrobe",
+        desc   = "Find the sets you can still finish, and hear about it the moment a piece drops.",
+        icon   = "Interface\\GossipFrame\\transmogrifyGossipIcon.blp",
+        url    = "https://www.curseforge.com/wow/addons/luckys-wardrobe",
+    },
 }
 
 StaticPopupDialogs["LUCKY_PROMO_COPY_URL"] = {

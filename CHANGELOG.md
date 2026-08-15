@@ -1,3 +1,14 @@
+## [1.9.0] - 2026-08-15
+
+### Added
+- Rich settings panels now carry the addon's version beside its name in the title bar, with the library version in the tooltip, and offer Dev Mode and Minimap Button as title bar toggles so addons no longer need a General group holding two rows.
+- `LuckyUI.CreateIconButton` builds the shared gold icon button, with a text or live tooltip, optional border cropping for `Interface\Icons` art, and `SetIconColor` / `SetIconDesaturated` for tinting it by state.
+
+### Improved
+- The What's New list now scrolls inside the first settings group instead of taking a tab of its own, so the group's version and promo rows stay pinned below it however long the list gets.
+- The promo section is now a row of icons with Discord first, in place of a stacked list.
+- Lucky's Wardrobe is listed in the promo section.
+
 ## [1.8.1] - 2026-08-13
 
 ### Added
