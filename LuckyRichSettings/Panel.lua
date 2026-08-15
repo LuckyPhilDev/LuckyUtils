@@ -276,7 +276,7 @@ local TITLE_TOGGLES = {
     { key = "devMode", label = "Dev Mode",
       icon = "Interface\\AddOns\\Luckys_Utils\\Media\\dev-mode.tga" },
     { key = "minimapButton", label = "Minimap Button",
-      icon = "Interface\\Icons\\INV_Misc_Map_01", cropBorder = true },
+      icon = "Interface\\AddOns\\Luckys_Utils\\Media\\minimap-button.tga" },
 }
 
 local TITLE_TOGGLE_OFF = { 0.34, 0.32, 0.28, 0.85 }
@@ -288,7 +288,6 @@ local function makeTitleToggle(titleBar, spec, opts)
         icon     = spec.icon,
         size     = 22,
         anchor   = "ANCHOR_BOTTOM",
-        texCoord = spec.cropBorder and { 0.08, 0.92, 0.08, 0.92 } or nil,
         tooltip  = function(tooltip)
             tooltip:AddLine(opts.label or spec.label)
             if checked then
