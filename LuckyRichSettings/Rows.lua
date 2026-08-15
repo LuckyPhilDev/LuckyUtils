@@ -102,22 +102,35 @@ local function attachHover(setting, group, extraFrames)
     end
 end
 
+-- Rows normally flow down the group's content frame. Between BeginScroll and
+-- EndScroll they flow down a scroll child instead, which is what folds the
+-- What's New list into a group that already has rows of its own.
+local function rowParent(group)
+    return group.rowParent or group.content
+end
+
 local function nextRowAnchor(group)
-    local prev = group.settings[#group.settings]
-    if prev then
-        return prev.row, "BOTTOM"
-    else
-        return group.heading, "BOTTOM"
+    if group.lastRow then return group.lastRow, "BOTTOM" end
+    if group.rowParent then return group.rowParent, "TOP" end
+    return group.heading, "BOTTOM"
+end
+
+local function placeRow(group, frame)
+    local anchor, anchorEdge = nextRowAnchor(group)
+    frame:SetPoint("TOPLEFT", anchor, anchorEdge .. "LEFT", 0, 0)
+    frame:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", 0, 0)
+    group.lastRow = frame
+    if group.rowParent then
+        group.rowParentHeight = (group.rowParentHeight or 0) + frame:GetHeight()
+        group.rowParent:SetHeight(group.rowParentHeight)
     end
 end
 
 local function makeRow(group, opts, height)
-    local row = CreateFrame("Frame", nil, group.content)
+    local row = CreateFrame("Frame", nil, rowParent(group))
     row:EnableMouse(true)
     row:SetHeight(height or 32)
-    local anchor, anchorEdge = nextRowAnchor(group)
-    row:SetPoint("TOPLEFT", anchor, anchorEdge .. "LEFT", 0, 0)
-    row:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", 0, 0)
+    placeRow(group, row)
 
     -- Hover highlight
     local hl = row:CreateTexture(nil, "BACKGROUND")
@@ -408,11 +421,9 @@ end
 -- ─── Label (read-only key-value info row) ─────────────────────────────────────
 
 function RichGroup:Label(opts)
-    local frame = CreateFrame("Frame", nil, self.content)
+    local frame = CreateFrame("Frame", nil, rowParent(self))
     frame:SetHeight(22)
-    local anchor, anchorEdge = nextRowAnchor(self)
-    frame:SetPoint("TOPLEFT", anchor, anchorEdge .. "LEFT", 0, 0)
-    frame:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", 0, 0)
+    placeRow(self, frame)
 
     local key = frame:CreateFontString(nil, "OVERLAY")
     key:SetFont(R_FONT, 11, "")
@@ -437,10 +448,8 @@ end
 -- is first sized, so following rows reflow automatically.
 
 function RichGroup:Notice(opts)
-    local frame = CreateFrame("Frame", nil, self.content)
-    local anchor, anchorEdge = nextRowAnchor(self)
-    frame:SetPoint("TOPLEFT",  anchor, anchorEdge .. "LEFT",  0, 0)
-    frame:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", 0, 0)
+    local frame = CreateFrame("Frame", nil, rowParent(self))
+    placeRow(self, frame)
 
     local box = CreateFrame("Frame", nil, frame, "BackdropTemplate")
     box:SetPoint("TOPLEFT", 14, -8)
@@ -477,6 +486,19 @@ end
 -- toggles/sliders/sections, so adding more standard rows above doesn't push
 -- them around.
 
+-- A Fill region takes whatever height is left above the bottom rows, so it has
+-- to be re-anchored whenever those rows change (they may be added after it).
+local function relayoutFill(group)
+    local holder = group.fillHolder
+    if not holder then return end
+    local first = group.bottomSettings and group.bottomSettings[1]
+    if first then
+        holder:SetPoint("BOTTOM", first.row, "TOP", 0, 4)
+    else
+        holder:SetPoint("BOTTOM", group.content, "BOTTOM", 0, 12)
+    end
+end
+
 local function relayoutBottom(group)
     local items = group.bottomSettings
     if not items or #items == 0 then return end
@@ -486,6 +508,7 @@ local function relayoutBottom(group)
     first:ClearAllPoints()
     first:SetPoint("TOPLEFT",  group.content, "BOTTOMLEFT",  0, totalH + 12)
     first:SetPoint("TOPRIGHT", group.content, "BOTTOMRIGHT", 0, totalH + 12)
+    relayoutFill(group)
 end
 
 function RichGroup:BottomLabel(opts)
@@ -612,11 +635,9 @@ end
 -- ─── Section heading (sub-group within a group) ──────────────────────────────
 
 function RichGroup:Section(name)
-    local frame = CreateFrame("Frame", nil, self.content)
+    local frame = CreateFrame("Frame", nil, rowParent(self))
     frame:SetHeight(28)
-    local anchor, anchorEdge = nextRowAnchor(self)
-    frame:SetPoint("TOPLEFT", anchor, anchorEdge .. "LEFT", 0, 0)
-    frame:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", 0, 0)
+    placeRow(self, frame)
 
     local label = frame:CreateFontString(nil, "OVERLAY")
     label:SetFont(R_FONT, 10, "")
@@ -640,35 +661,58 @@ end
 -- must keep the returned frame's height in sync with its content so the scroll
 -- range is correct. Must be the last row added to the group.
 
-function RichGroup:Fill()
+function RichGroup:Fill(inset)
+    inset = inset or 14
     local holder = CreateFrame("Frame", nil, self.content)
     local anchor, anchorEdge = nextRowAnchor(self)
-    holder:SetPoint("TOPLEFT",  anchor, anchorEdge .. "LEFT",  14, -8)
-    holder:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", -14, -8)
-    holder:SetPoint("BOTTOM", self.content, "BOTTOM", 0, 12)
+    holder:SetPoint("TOPLEFT",  anchor, anchorEdge .. "LEFT",  inset, -8)
+    holder:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", -inset, -8)
+    self.fillHolder = holder
+    self.lastRow = holder
+    relayoutFill(self)
 
     local scroll = CreateFrame("ScrollFrame", nil, holder, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT")
     scroll:SetPoint("BOTTOMRIGHT", -22, 0)
 
     local inner = CreateFrame("Frame", nil, scroll)
-    inner:SetWidth(scroll:GetWidth() or 400)
+    inner:SetSize(scroll:GetWidth() or 400, 1)
     scroll:SetScrollChild(inner)
     scroll:HookScript("OnSizeChanged", function(_, w) inner:SetWidth(w) end)
+
+    -- Content that fits needs no scrollbar, and gives its 22px back to the rows.
+    scroll:HookScript("OnScrollRangeChanged", function(self, _, yRange)
+        local bar = self.ScrollBar
+        if not bar then return end
+        local scrollable = (yRange or self:GetVerticalScrollRange()) > 0
+        bar:SetShown(scrollable)
+        self:SetPoint("BOTTOMRIGHT", scrollable and -22 or 0, 0)
+    end)
 
     table.insert(self.settings, { row = holder, isSection = true })
     return inner
 end
 
+--- Send the rows added from here on into a scrolling region that fills the
+--- space left between the rows above it and the group's bottom rows. Ends at
+--- EndScroll. Only one scroll region per group.
+function RichGroup:BeginScroll(inset)
+    local inner = self:Fill(inset)
+    self.rowParent, self.lastRow, self.rowParentHeight = inner, nil, 0
+    return inner
+end
+
+function RichGroup:EndScroll()
+    self.rowParent, self.lastRow = nil, self.fillHolder
+end
+
 -- ─── Card (read-only navigation row, used in What's New) ──────────────────────
 
 function RichGroup:Card(opts)
-    local row = CreateFrame("Button", nil, self.content)
+    local row = CreateFrame("Button", nil, rowParent(self))
     row:EnableMouse(true)
     row:SetHeight(32)
-    local anchor, anchorEdge = nextRowAnchor(self)
-    row:SetPoint("TOPLEFT", anchor, anchorEdge .. "LEFT", 0, 0)
-    row:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", 0, 0)
+    placeRow(self, row)
 
     local hl = row:CreateTexture(nil, "BACKGROUND")
     hl:SetAllPoints()

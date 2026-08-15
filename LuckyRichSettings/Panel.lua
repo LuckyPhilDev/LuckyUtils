@@ -1,5 +1,5 @@
 -- LuckyRichSettings/Panel.lua: left nav, group management and lazy building,
--- the What's New group, and the LuckySettings:NewRichPanel factory.
+-- the What's New list, and the LuckySettings:NewRichPanel factory.
 
 local ns = select(2, ...)
 local Rich = ns.Rich
@@ -183,24 +183,11 @@ function RichBuilder:OnOpen(fn)
     self._onOpen = fn
 end
 
--- Re-anchor every nav button from scratch (used after re-ordering self.groups).
-function RichBuilder:_relayoutNav()
-    for i, g in ipairs(self.groups) do
-        local btn = g.navButton
-        btn:ClearAllPoints()
-        btn:SetPoint("LEFT")
-        btn:SetPoint("RIGHT")
-        if i == 1 then
-            btn:SetPoint("TOP", 0, -4)
-        else
-            btn:SetPoint("TOP", self.groups[i - 1].navButton, "BOTTOM", 0, 0)
-        end
-    end
-end
-
 -- Call after all groups/settings are added. Scans for settings flagged with a
--- `since` version in `recentVersions` and prepends a "What's New" group that
--- mirrors them as clickable cards. Cards activate the source group on click.
+-- `since` version in `recentVersions` and appends a scrolling "What's New" list
+-- to the first group, mirroring them as clickable cards that activate the
+-- source group. It scrolls, so the group's bottom rows (version info, promo)
+-- stay pinned below it however long the list gets.
 function RichBuilder:Finalize()
     if self._finalized then return end
     self._finalized = true
@@ -224,17 +211,19 @@ function RichBuilder:Finalize()
         end
     end
 
+    -- Callers hang their version info and promo rows off this group, so it is
+    -- published even when nothing is new enough to list.
+    local host = self.groups[1]
+    self.whatsNewGroup = host
     if #grouped == 0 then return end
 
-    local whatsNew = self:Group("What's New")
-    -- Move What's New to position 1
-    table.remove(self.groups) -- pop from end
-    table.insert(self.groups, 1, whatsNew)
+    host:Section("What's New")
+    host:BeginScroll(0)
 
     for _, gn in ipairs(grouped) do
-        whatsNew:Section(gn.group.name)
+        host:Section(gn.group.name)
         for _, s in ipairs(gn.items) do
-            whatsNew:Card({
+            host:Card({
                 label       = s.label,
                 since       = s.since,
                 source      = s,
@@ -243,9 +232,8 @@ function RichBuilder:Finalize()
         end
     end
 
-    self:_relayoutNav()
-    self:SetActiveGroup(whatsNew)
-    self.whatsNewGroup = whatsNew
+    host:EndScroll()
+    self.whatsNewGroup = host
 end
 
 function RichBuilder:Open()
