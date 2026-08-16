@@ -38,6 +38,13 @@ end
 
 -- ─── Setting rows ─────────────────────────────────────────────────────────────
 
+-- A feature whose dependency is absent cannot be switched on, so its row locks
+-- the same way an explicitly disabled one does. The About pane still explains
+-- why, and offers the fix when the dependency is merely switched off.
+local function requiresUnmet(requires)
+    return requires ~= nil and not LuckyDeps:Check(requires.addon, requires.minVersion)
+end
+
 local function applyEnabled(setting)
     local enabled = true
     if setting.disabled then
@@ -188,7 +195,7 @@ function RichGroup:Toggle(opts)
         rowHover = hl,
         checkbox = cb,
         parent   = opts.parent,
-        disabled = opts.disabled,
+        disabled = opts.disabled or requiresUnmet(opts.requires),
         getChecked = type(opts.checked) == "function" and opts.checked or nil,
     }
 

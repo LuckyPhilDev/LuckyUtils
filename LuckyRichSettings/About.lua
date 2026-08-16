@@ -136,13 +136,25 @@ local function buildAbout(panel)
     local warn = warnHolder:CreateFontString(nil, "OVERLAY")
     warn:SetFont(R_FONT, 11, "")
     warn:SetPoint("TOPLEFT", 8, -6)
-    warn:SetPoint("BOTTOMRIGHT", -8, 6)
+    warn:SetPoint("TOPRIGHT", -8, -6)
     warn:SetTextColor(R.warn[1], R.warn[2], R.warn[3])
     warn:SetJustifyH("LEFT")
     warn:SetSpacing(3)
     warnHolder:Hide()
     A.warnHolder = warnHolder
     A.warn = warn
+
+    -- Offered only when the dependency is installed and merely switched off,
+    -- which is the one dependency failure the player can put right from here.
+    local enableBtn = LuckyUI.CreateButton(warnHolder, "Enable and Reload", 140, 22, "primary")
+    enableBtn:SetPoint("TOPLEFT", warn, "BOTTOMLEFT", 0, -8)
+    enableBtn:SetScript("OnClick", function(self)
+        if not self.addonName then return end
+        LuckyDeps:Enable(self.addonName)
+        ReloadUI()
+    end)
+    enableBtn:Hide()
+    A.enableBtn = enableBtn
 
     -- Slider range (hidden unless setting is a slider)
     local rangeHolder = CreateFrame("Frame", nil, A, "BackdropTemplate")
@@ -212,6 +224,7 @@ local function relayoutAbout(panel)
         A.warnHolder:SetPoint("RIGHT", A, "RIGHT", -10, 0)
         local h = A.warn:GetStringHeight()
         if h <= 0 then h = 14 end
+        if A.enableBtn:IsShown() then h = h + A.enableBtn:GetHeight() + 8 end
         A.warnHolder:SetHeight(h + 12)
         cursor = A.warnHolder
     end
@@ -295,11 +308,16 @@ local function aboutShow(panel, s)
     end
 
     -- Resolve dependency warnings live
-    local warningText = s.warning
+    local warningText, offerEnable = s.warning, false
     if s.requires and LuckyDeps and LuckyDeps.Check then
-        local ok, msg = LuckyDeps:Check(s.requires.addon, s.requires.minVersion)
-        if not ok then warningText = msg end
+        local ok, msg, status = LuckyDeps:Check(s.requires.addon, s.requires.minVersion)
+        if not ok then
+            warningText = msg
+            offerEnable = status == LuckyDeps.Status.DISABLED
+        end
     end
+    A.enableBtn.addonName = offerEnable and s.requires.addon or nil
+    A.enableBtn:SetShown(offerEnable)
     if warningText then
         A.warn:SetText(warningText)
         A.warnHolder:Show()

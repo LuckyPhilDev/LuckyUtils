@@ -54,6 +54,7 @@ LuckyUI = stub({
     Backdrop = {},
     C = { goldIcon = { 1, 1, 1 } },
     CreateIconButton = function(parent) return newFrame("Button", parent) end,
+    CreateButton = function(parent) return newFrame("Button", parent) end,
 })
 LuckySettings = stub({ Register = function() return "category" end })
 C_AddOns = stub({ GetAddOnMetadata = function() return "1.0.0" end })

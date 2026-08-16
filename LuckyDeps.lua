@@ -30,25 +30,52 @@ function LuckyDeps:IsEnabled(addonName)
     return loadable == true
 end
 
+LuckyDeps.Status = {
+    OK       = "ok",
+    MISSING  = "missing",   -- not installed, or installed but unusable
+    DISABLED = "disabled",  -- installed and switched off, so the player can fix it
+    OUTDATED = "outdated",
+}
+
 --- Checks whether an addon is loaded and meets an optional minimum version.
 ---@param addonName string
 ---@param minVersion string|nil
 ---@return boolean ok
 ---@return string|nil message
+---@return string status one of LuckyDeps.Status
 function LuckyDeps:Check(addonName, minVersion)
     local versionSuffix = minVersion and (" version " .. minVersion) or ""
     local failMessage = addonName .. versionSuffix .. " is required for this feature."
 
-    if not C_AddOns.IsAddOnLoaded(addonName) then
-        return false, failMessage
-    end
-
-    if minVersion then
-        local actual = C_AddOns.GetAddOnMetadata(addonName, "Version") or ""
-        if not isAtLeast(actual, minVersion) then
-            return false, failMessage
+    if C_AddOns.IsAddOnLoaded(addonName) then
+        if minVersion then
+            local actual = C_AddOns.GetAddOnMetadata(addonName, "Version") or ""
+            if not isAtLeast(actual, minVersion) then
+                return false, failMessage, self.Status.OUTDATED
+            end
         end
+        return true, nil, self.Status.OK
     end
 
-    return true, nil
+    -- Switched off is worth saying out loud, because it is the one failure the
+    -- player can undo from here.
+    local _, _, _, _, reason = C_AddOns.GetAddOnInfo(addonName)
+    if reason == "DISABLED" or reason == "DEP_DISABLED" then
+        return false, addonName .. " is installed but switched off for this character.",
+            self.Status.DISABLED
+    end
+
+    return false, failMessage, self.Status.MISSING
+end
+
+--- Switches an addon on for this character, along with anything it declares a
+--- dependency on. Takes effect on the next UI reload.
+--- Only direct dependencies are followed, which covers every addon this suite
+--- checks for; a dependency that is itself off and has its own would need more.
+---@param addonName string
+function LuckyDeps:Enable(addonName)
+    C_AddOns.EnableAddOn(addonName)
+    for _, dependency in ipairs({ C_AddOns.GetAddOnDependencies(addonName) }) do
+        C_AddOns.EnableAddOn(dependency)
+    end
 end
