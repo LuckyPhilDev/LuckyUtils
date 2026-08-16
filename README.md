@@ -381,9 +381,20 @@ LuckyBugs:Show()
 if LuckyDeps:IsEnabled("WeakAuras") then ... end
 
 -- Check if loaded and optionally at minimum version
-local ok, err = LuckyDeps:Check("Details", "9.0.0")
+local ok, err, status = LuckyDeps:Check("Details", "9.0.0")
 if not ok then print(err) end
+
+-- status is one of LuckyDeps.Status: OK, MISSING, DISABLED, OUTDATED.
+-- DISABLED means installed but switched off, the one failure a player can undo.
+if status == LuckyDeps.Status.DISABLED then
+    LuckyDeps:Enable("Details")   -- also enables its own dependencies
+    ReloadUI()
+end
 ```
+
+A setting given a `requires` table greys its row out while the dependency is
+unmet, and the About pane offers an Enable and Reload button when the
+dependency is merely switched off.
 
 ---
 
