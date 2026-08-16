@@ -94,6 +94,15 @@ function LuckyPromo:Missing(selfFolder)
     return out
 end
 
+--- The promoted artwork for an addon, nil when it is not one of ours.
+---@param folder string
+---@return string|nil
+function LuckyPromo:GetIcon(folder)
+    for _, addon in ipairs(ADDONS) do
+        if addon.folder == folder then return addon.icon end
+    end
+end
+
 -- Dev toggle: show every addon regardless of install state, for layout testing.
 SLASH_LUCKYPROMO1 = "/luckypromo"
 SlashCmdList.LUCKYPROMO = function()

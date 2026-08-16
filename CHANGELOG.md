@@ -1,6 +1,7 @@
 ## [1.9.1] - 2026-08-15
 
 ### Improved
+- Rich settings panels now show the addon's icon to the left of its name in the title bar, using the promo artwork for suite addons and the TOC `IconTexture` for anything else.
 - The promo section ships its own artwork for each addon, in place of borrowed game icons. The files are in `Media` as `promo-<addon>.tga`, so an addon's minimap button can point at the same art.
 
 ## [1.9.0] - 2026-08-15

@@ -245,6 +245,20 @@ end
 
 -- ─── Title bar ────────────────────────────────────────────────────────────────
 
+-- The suite's promo artwork doubles as each addon's icon; anything outside the
+-- suite falls back to whatever its TOC declares.
+local function makeTitleIcon(titleBar, folder)
+    local path = folder and (LuckyPromo:GetIcon(folder)
+        or C_AddOns.GetAddOnMetadata(folder, "IconTexture"))
+    if not path then return end
+
+    local tex = titleBar:CreateTexture(nil, "ARTWORK")
+    tex:SetSize(24, 24)
+    tex:SetPoint("LEFT", 14, 0)
+    tex:SetTexture(path)
+    return tex
+end
+
 -- The addon's own version sits beside its name; the library version it is
 -- running on only matters when someone is filing a bug, so it hides in the
 -- tooltip rather than taking a row of its own.
@@ -359,9 +373,15 @@ function LuckySettings:NewRichPanel(displayName, opts, contents)
     rFillBg(titleBar, R.bg2)
     rEdgeRule(titleBar, "BOTTOM", R.border)
 
+    local titleIcon = makeTitleIcon(titleBar, opts.addonFolder)
+
     local titleL = titleBar:CreateFontString(nil, "OVERLAY")
     titleL:SetFont(R_FONT, 16, "")
-    titleL:SetPoint("LEFT", 14, 0)
+    if titleIcon then
+        titleL:SetPoint("LEFT", titleIcon, "RIGHT", 8, 0)
+    else
+        titleL:SetPoint("LEFT", 14, 0)
+    end
     titleL:SetText(displayName)
     titleL:SetTextColor(R.accentLight[1], R.accentLight[2], R.accentLight[3])
 
