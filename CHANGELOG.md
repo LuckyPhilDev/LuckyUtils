@@ -1,9 +1,11 @@
-## [1.10.0] - 2026-08-16
+## [1.11.0] - 2026-08-18
 
 ### Added
-- A setting whose `requires` check fails now greys its row out like an explicitly disabled one, so the About pane's warning is no longer the only sign the toggle does nothing. `LuckyDeps:Check` returns a status alongside its message, telling an addon that is installed but switched off apart from one that is absent.
-- The About pane offers an Enable and Reload button when the dependency is only switched off, turning it and its own dependencies back on. `LuckyDeps:Enable` does the same from code.
+- The library is version-gated behind LibStub as `LuckysUtils-1.0` and ships `LibStub.lua`. Consumers embed their own copy via `.pkgmeta` externals and load `Libs\LuckysUtils\embeds.xml` before their own files; the newest copy loaded wins and publishes the same globals as always. Check which copy won in-game with `/dump LibStub.minors["LuckysUtils-1.0"]`.
+- `LuckyUtils.FormatMoney(copper)` formats a copper amount as plain "12g 34s 56c" chat text.
+- `LuckyUtils.Debounced(seconds, action)` wraps an action so a burst of calls runs it once after the delay.
 
 ### Improved
-- Rich settings panels now show the addon's icon to the left of its name in the title bar, using the promo artwork for suite addons and the TOC `IconTexture` for anything else.
-- The promo section ships its own artwork for each addon, in place of borrowed game icons. The files are in `Media` as `promo-<addon>.tga`, so an addon's minimap button can point at the same art.
+- Runtime state (item caches, roster callbacks, the minimap broker queue, the error watcher and its handler chain) now lives on the module globals, so loading several embedded copies never duplicates frames, event handlers, or error prompts.
+- LuckySettings and LuckyBugs initialise off the hosting addon's own load event, so they work embedded under any addon folder name.
+- `embeds.xml` now loads every module, including LuckyBugs, in the same order as the standalone addon.

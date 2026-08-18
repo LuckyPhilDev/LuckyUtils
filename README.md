@@ -33,20 +33,26 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 
 ### Installation as a dependency
 
-Add to your `.toc`:
-
-```
-## OptionalDeps: Luckys_Utils
-```
-
-And to your `.pkgmeta` to embed it in packaged releases:
+Embed the library in packaged releases via `.pkgmeta` externals:
 
 ```yaml
 externals:
-  YourAddon/Luckys_Utils: https://github.com/LuckyPhilDev/LuckyUtils
+  YourAddon/Libs/LuckysUtils:
+    url: https://github.com/LuckyPhilDev/LuckyUtils
+    tag: latest
 ```
 
-The library loads before your addon code. All globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBugs`) are available after `ADDON_LOADED` fires for your addon.
+In your `.toc`, load the library before your own files, declare its SavedVariables alongside yours (an embedded library cannot declare its own), and keep `OptionalDeps` so the standalone checkout loads first in development, where `Libs/LuckysUtils` does not exist:
+
+```
+## OptionalDeps: Luckys_Utils
+## SavedVariables: YourAddonDB, LuckySettingsDB, LuckyRosterDB
+
+Libs\LuckysUtils\embeds.xml
+YourFirstFile.lua
+```
+
+Every copy registers `LuckysUtils-1.0` with LibStub and only the newest copy loaded runs; it publishes the same globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBugs`), available once the library has loaded, whichever addon carried it. To see which copy won in-game: `/dump LibStub.minors["LuckysUtils-1.0"]`.
 
 ---
 
@@ -62,6 +68,12 @@ LuckyUtils.ApplyDefaults(MyAddonDB, {
 
 -- Canonical "Name-Realm" key for the current character
 local key = LuckyUtils.CharacterKey()  -- e.g. "Tharindel-Silvermoon"
+
+-- Plain "12g 34s 56c" chat text from a copper amount
+local cost = LuckyUtils.FormatMoney(123456)
+
+-- Run once per burst of calls, after the delay
+local refresh = LuckyUtils.Debounced(0.25, RebuildList)
 ```
 
 ---
