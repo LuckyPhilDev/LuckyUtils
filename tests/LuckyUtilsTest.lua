@@ -1,3 +1,5 @@
+-- luacheck: globals C_Timer
+
 LuckyUtils = nil
 
 dofile("LuckyUtils.lua")
