@@ -4,6 +4,8 @@
 -- are never shown, so only the Discord link remains once everything is
 -- installed.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyPromo = LuckyPromo or {}
 
 local SECTION_TITLE = "More from Lucky Phil"

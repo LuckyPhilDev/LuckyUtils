@@ -1,6 +1,8 @@
 -- LuckyLog: Shared dev-logging factory for Lucky Phil's addons.
 -- Creates gated loggers that only print when an addon's debug flag is on.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyLog = LuckyLog or {}
 
 --- Create a new logger function.

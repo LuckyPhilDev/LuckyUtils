@@ -1,5 +1,7 @@
 -- LuckyDB: Versioned, transactional SavedVariables migrations.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyDB = LuckyDB or {}
 
 local DEFAULT_VERSION_KEY = "__schemaVersion"

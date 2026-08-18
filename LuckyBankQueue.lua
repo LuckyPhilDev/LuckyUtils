@@ -1,5 +1,7 @@
 -- LuckyBankQueue: Sequential, cursor-aware container item transfers.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyBankQueue = LuckyBankQueue or {}
 
 local Queue = {}

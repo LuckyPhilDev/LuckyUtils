@@ -1,6 +1,8 @@
 -- LuckyRichSettings/About.lua: the About rail (hover descriptions, warnings,
 -- status chips, screenshots) and the floating cursor preview for wide images.
 
+if LuckysUtilsSkipLoad then return end
+
 local ns = select(2, ...)
 local Rich = ns.Rich
 

@@ -10,10 +10,16 @@
 --   local label = LuckyRoster:FormatName(charKey)  -- class-coloured, hides realm if local
 --   LuckyRoster:RegisterCallback(function() RefreshUI() end)
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyRoster = LuckyRoster or {}
 
 local Roster = LuckyRoster
-local callbacks = {}
+
+-- Callbacks live on the global so consumers registered against an older
+-- embedded copy keep firing after a newer copy takes over.
+LuckyRoster._callbacks = LuckyRoster._callbacks or {}
+local callbacks = LuckyRoster._callbacks
 
 local function CharKey()
     local name, realm = UnitFullName("player")
@@ -168,7 +174,11 @@ end
 -- Event wiring
 -- ---------------------------------------------------------------------------
 
-local frame = CreateFrame("Frame", "LuckyRosterFrame")
+-- Reuse the frame across embedded copies: RegisterEvent is idempotent on the
+-- same frame and SetScript replaces the handler, so an upgrade never doubles
+-- event handling.
+LuckyRoster._frame = LuckyRoster._frame or CreateFrame("Frame", "LuckyRosterFrame")
+local frame = LuckyRoster._frame
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("SKILL_LINES_CHANGED")

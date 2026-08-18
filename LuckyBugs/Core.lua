@@ -5,6 +5,8 @@
 -- Pure Lua, no WoW APIs, so it can be unit tested. Watcher.lua installs the
 -- error handler and owns the prompt and the report window.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyBugs = LuckyBugs or {}
 
 local MAX_LOG              = 25

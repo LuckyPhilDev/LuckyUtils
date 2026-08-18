@@ -1,5 +1,11 @@
 -- LuckySettings: Shared settings registration and panel builder for Lucky Phil's addons.
 
+if LuckysUtilsSkipLoad then return end
+
+-- Folder this copy loads from: the host addon when embedded, Luckys_Utils when
+-- standalone. Nil under a plain-Lua test harness, hence the fallback.
+local ADDON_NAME = ... or "Luckys_Utils"
+
 LuckySettings = LuckySettings or {}
 
 local PREFIX = "|cffc9a84c[LuckySettings]|r"
@@ -445,10 +451,11 @@ end
 
 -- ── Debug mode init & slash command ──────────────────────────────────────────
 
-local initFrame = CreateFrame("Frame")
+LuckySettings._initFrame = LuckySettings._initFrame or CreateFrame("Frame")
+local initFrame = LuckySettings._initFrame
 initFrame:RegisterEvent("ADDON_LOADED")
 initFrame:SetScript("OnEvent", function(_, _, addonName)
-    if addonName ~= "Luckys_Utils" then return end
+    if addonName ~= ADDON_NAME then return end
     LuckySettingsDB = LuckySettingsDB or { debugMode = false }
     Log("LuckySettings loaded, debugMode:", tostring(LuckySettingsDB.debugMode))
 end)

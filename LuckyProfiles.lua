@@ -15,6 +15,8 @@
 --   LuckyProfiles:ShowImport(title, onAccept) -> opens an import panel;
 --       onAccept(decodedTable) is called when the user imports a valid string.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyProfiles = LuckyProfiles or {}
 
 local PREFIX = "LP1"  -- bump if the wire format ever changes incompatibly

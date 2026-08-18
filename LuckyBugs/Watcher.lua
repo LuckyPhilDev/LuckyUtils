@@ -4,13 +4,21 @@
 -- The error handler is installed as this file loads, before the rest of the
 -- library, so errors raised while other addons are still loading are caught.
 
+if LuckysUtilsSkipLoad then return end
+
+-- Folder this copy loads from: the host addon when embedded, Luckys_Utils when
+-- standalone. Nil under a plain-Lua test harness, hence the fallback.
+local ADDON_NAME = ... or "Luckys_Utils"
+
 local DISCORD_URL = "https://discord.gg/ptTtYyAjdZ"
 
 local PANEL_W, PANEL_H = 540, 420
 local SAVED_LOG_SIZE   = 10
 
 local recorder
-local pending      -- entry waiting for a prompt, held back until out of combat
+-- The queued prompt entry lives on the global (LuckyBugs._pending) so a prompt
+-- queued through an older embedded copy still fires after a newer copy's
+-- handlers take over.
 local window
 local windowIndex = 1
 
@@ -217,15 +225,15 @@ StaticPopupDialogs["LUCKY_BUGS_REPORT"] = {
 }
 
 local function showPrompt()
-    local entry = pending
+    local entry = LuckyBugs._pending
     if not entry then return end
     if InCombatLockdown() then return end  -- retried on PLAYER_REGEN_ENABLED
-    pending = nil
+    LuckyBugs._pending = nil
     StaticPopup_Show("LUCKY_BUGS_REPORT", addonTitle(entry))
 end
 
 local function queuePrompt(entry)
-    pending = entry
+    LuckyBugs._pending = entry
     C_Timer.After(0, showPrompt)  -- out of the error handler before touching the UI
 end
 
@@ -233,13 +241,21 @@ end
 -- Error capture
 -- ---------------------------------------------------------------------------
 
-recorder = LuckyBugs:NewRecorder({
+-- The recorder survives upgrades so errors captured while addons were still
+-- loading are not lost when a newer embedded copy takes over. Its closures
+-- only touch globals, so an old instance stays valid under new handlers.
+LuckyBugs._recorder = LuckyBugs._recorder or LuckyBugs:NewRecorder({
     now             = function() return date("%d/%m/%y %H:%M:%S") end,
     isPromptEnabled = promptEnabled,
     onPrompt        = queuePrompt,
 })
+recorder = LuckyBugs._recorder
 
-local previousHandler = geterrorhandler()
+-- The pre-Lucky handler this copy chains to. An upgrade replaces our own
+-- installed handler outright instead of chaining to it, so one error is
+-- captured once however many copies loaded.
+LuckyBugs._previousHandler = LuckyBugs._previousHandler or geterrorhandler()
+
 local handling = false
 
 local function onError(err, ...)
@@ -249,10 +265,15 @@ local function onError(err, ...)
         pcall(recorder.Capture, recorder, tostring(err), debugstack(2))
         handling = false
     end
-    return previousHandler(err, ...)
+    return LuckyBugs._previousHandler(err, ...)
 end
 
+if geterrorhandler() ~= LuckyBugs._installedHandler then
+    -- Someone else claimed the handler since our last copy installed; chain them.
+    LuckyBugs._previousHandler = geterrorhandler()
+end
 seterrorhandler(onError)
+LuckyBugs._installedHandler = onError
 
 -- BugGrabber (BugSack) claims the error handler for itself and does not chain,
 -- so where it is installed we take its errors from its own callback instead.
@@ -269,17 +290,23 @@ end
 -- Lifecycle
 -- ---------------------------------------------------------------------------
 
-local frame = CreateFrame("Frame")
+LuckyBugs._frame = LuckyBugs._frame or CreateFrame("Frame")
+local frame = LuckyBugs._frame
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 frame:RegisterEvent("PLAYER_LOGOUT")
 frame:SetScript("OnEvent", function(_, event, addon)
     if event == "ADDON_LOADED" then
-        if addon ~= "Luckys_Utils" then return end
+        if addon ~= ADDON_NAME then return end
         LuckySettingsDB = LuckySettingsDB or {}
         LuckySettingsDB.bugs = LuckySettingsDB.bugs or { prompt = true, log = {} }
-        recorder:Seed(LuckySettingsDB.bugs.log)
+        -- Seed appends, and with embedded copies each host's ADDON_LOADED
+        -- lands here, so only the first may seed the shared recorder.
+        if not LuckyBugs._seeded then
+            LuckyBugs._seeded = true
+            recorder:Seed(LuckySettingsDB.bugs.log)
+        end
     elseif event == "PLAYER_LOGIN" then
         adoptBugGrabber()
     elseif event == "PLAYER_REGEN_ENABLED" then

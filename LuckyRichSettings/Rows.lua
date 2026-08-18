@@ -3,6 +3,8 @@
 -- fill regions, and What's New cards), plus enabled-state propagation and the
 -- live re-read of function-valued row state.
 
+if LuckysUtilsSkipLoad then return end
+
 local ns = select(2, ...)
 local Rich = ns.Rich
 

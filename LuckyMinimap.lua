@@ -1,6 +1,8 @@
 -- LuckyMinimap: Shared minimap button factory for Lucky Phil's addons.
 -- Creates draggable minimap buttons without external library dependencies.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyMinimap = LuckyMinimap or {}
 
 local math_sqrt = math.sqrt
@@ -78,8 +80,10 @@ end
 -- launcher object is the only thing that puts us on their bars. None of it ships
 -- with us: LDB arrives with whichever display addon the player runs, and with no
 -- display addon there is nobody to publish to.
-local pendingBrokers = {}
-local loggedIn = false
+-- Queue and flag live on the global so a broker queued through an older
+-- embedded copy is still published when a newer copy's handler flushes.
+LuckyMinimap._pendingBrokers = LuckyMinimap._pendingBrokers or {}
+local pendingBrokers = LuckyMinimap._pendingBrokers
 
 local function publishBroker(opts)
     local ldb = LibStub and LibStub:GetLibrary("LibDataBroker-1.1", true)
@@ -107,14 +111,17 @@ end
 -- is built during ADDON_LOADED. Waiting for login costs nothing: a display addon
 -- that has already swept its registry picks up a late arrival from LDB's own
 -- created-object callback.
-local brokerFrame = CreateFrame("Frame")
+LuckyMinimap._brokerFrame = LuckyMinimap._brokerFrame or CreateFrame("Frame")
+local brokerFrame = LuckyMinimap._brokerFrame
 brokerFrame:RegisterEvent("PLAYER_LOGIN")
 brokerFrame:SetScript("OnEvent", function()
-    loggedIn = true
+    LuckyMinimap._loggedIn = true
     for _, opts in ipairs(pendingBrokers) do
         publishBroker(opts)
     end
-    pendingBrokers = {}
+    for i = #pendingBrokers, 1, -1 do
+        pendingBrokers[i] = nil
+    end
 end)
 
 --- Create a minimap button.
@@ -235,7 +242,7 @@ function LuckyMinimap:Create(opts)
     end
 
     -- A button built after login (a retry, say) has missed the sweep above.
-    if loggedIn then
+    if LuckyMinimap._loggedIn then
         publishBroker(opts)
     else
         pendingBrokers[#pendingBrokers + 1] = opts

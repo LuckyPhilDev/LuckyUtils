@@ -1,6 +1,8 @@
 -- LuckyDeps: Generic addon dependency checker for Lucky Phil's addons.
 -- Checks whether optional dependencies are installed, loaded, and meet version requirements.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyDeps = LuckyDeps or {}
 
 local function parseVersion(str)
