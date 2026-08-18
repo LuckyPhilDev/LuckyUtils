@@ -279,7 +279,8 @@ local function makeTitleVersion(titleBar, titleL, version)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
         GameTooltip:AddLine("Version " .. version)
         GameTooltip:AddLine("Lucky's Utils v"
-            .. (C_AddOns.GetAddOnMetadata("Luckys_Utils", "Version") or "?"), 0.6, 0.6, 0.6)
+            .. (C_AddOns.GetAddOnMetadata("Luckys_Utils", "Version")
+                or ("1.0 r" .. LibStub.minors["LuckysUtils-1.0"])), 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
     hit:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -290,9 +291,9 @@ end
 -- don't each need a General group holding two rows.
 local TITLE_TOGGLES = {
     { key = "devMode", label = "Dev Mode",
-      icon = "Interface\\AddOns\\Luckys_Utils\\Media\\dev-mode.tga" },
+      icon = LuckyMedia("dev-mode.tga") },
     { key = "minimapButton", label = "Minimap Button",
-      icon = "Interface\\AddOns\\Luckys_Utils\\Media\\minimap-button.tga" },
+      icon = LuckyMedia("minimap-button.tga") },
 }
 
 local TITLE_TOGGLE_OFF = { 0.34, 0.32, 0.28, 0.85 }

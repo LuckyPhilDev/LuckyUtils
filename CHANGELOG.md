@@ -1,3 +1,13 @@
+## [1.11.1] - 2026-08-18
+
+### Added
+- `LuckyMedia(fileName)` returns the full texture path into the winning copy's `Media` folder, resolving to the host addon's `Libs\LuckysUtils\Media` when embedded and to the standalone folder otherwise. Use it instead of writing `Interface\AddOns\Luckys_Utils\Media\...` paths out.
+- `LuckyDeps:StandaloneRemovable()` reports whether the standalone addon could be uninstalled safely: an embedded copy is present and no installed addon still requires Luckys_Utils. Nothing calls it yet; it gates a future uninstall hint.
+
+### Fixed
+- The promo row icons, the Discord icon, and the dev-mode and minimap icons in rich settings panels now load when the library runs embedded without the standalone addon installed.
+- Version labels in bug reports and the settings title tooltip fall back to the library registration instead of "?" when the standalone addon is absent.
+
 ## [1.11.0] - 2026-08-18
 
 ### Added

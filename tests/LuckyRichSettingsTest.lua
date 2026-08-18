@@ -60,6 +60,8 @@ LuckySettings = stub({ Register = function() return "category" end })
 C_AddOns = stub({ GetAddOnMetadata = function() return "1.0.0" end })
 
 local ns = {}
+dofile("LibStub.lua")
+loadfile("VersionGate.lua")("Luckys_Utils")
 loadfile("LuckyRichSettings/Core.lua")("Luckys_Utils", ns)
 loadfile("LuckyRichSettings/About.lua")("Luckys_Utils", ns)
 loadfile("LuckyRichSettings/Rows.lua")("Luckys_Utils", ns)

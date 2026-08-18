@@ -81,3 +81,29 @@ function LuckyDeps:Enable(addonName)
         C_AddOns.EnableAddOn(dependency)
     end
 end
+
+--- True when the standalone Luckys_Utils addon is installed but everything
+--- would keep working without it: an embedded copy of this library is present,
+--- and no installed addon still lists Luckys_Utils as a required dependency
+--- (WoW disables an addon whose required dependency is missing). Gates the
+--- future "you can uninstall the standalone" nudge; nothing calls it yet.
+---@return boolean
+function LuckyDeps:StandaloneRemovable()
+    if not C_AddOns.DoesAddOnExist("Luckys_Utils") then return false end
+
+    local embedded = false
+    for _, host in ipairs(LuckysUtilsHosts or {}) do
+        if host ~= "Luckys_Utils" then
+            embedded = true
+            break
+        end
+    end
+    if not embedded then return false end
+
+    for index = 1, C_AddOns.GetNumAddOns() do
+        for _, dependency in ipairs({ C_AddOns.GetAddOnDependencies(index) }) do
+            if dependency == "Luckys_Utils" then return false end
+        end
+    end
+    return true
+end

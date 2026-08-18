@@ -14,7 +14,7 @@ local SECTION_TITLE = "More from Lucky Phil"
 local DISCORD = {
     name = "Discord",
     desc = "Get support, report a bug or suggest a feature.",
-    icon = "Interface\\AddOns\\Luckys_Utils\\Media\\discord.tga",
+    icon = LuckyMedia("discord.tga"),
     url  = "https://discord.gg/ptTtYyAjdZ",
 }
 
@@ -24,35 +24,35 @@ local ADDONS = {
         folder = "Luckys_Grab_Bag",
         name   = "Lucky's Grab-bag",
         desc   = "A collection of small quality-of-life features.",
-        icon   = "Interface\\AddOns\\Luckys_Utils\\Media\\promo-grab-bag.tga",
+        icon   = LuckyMedia("promo-grab-bag.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-grab-bag",
     },
     {
         folder = "Luckys_Loot_Wishlist",
         name   = "Lucky's Loot Wishlist",
         desc   = "Track loot from the Adventure Guide and manage a per-character wishlist.",
-        icon   = "Interface\\AddOns\\Luckys_Utils\\Media\\promo-loot-wishlist.tga",
+        icon   = LuckyMedia("promo-loot-wishlist.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-loot-wishlist",
     },
     {
         folder = "Luckys_Warbank_Stockist",
         name   = "Lucky's Warbank Stockist",
         desc   = "Automatically manages item quantities between your bags and the Warband Bank.",
-        icon   = "Interface\\AddOns\\Luckys_Utils\\Media\\promo-warbank-stockist.tga",
+        icon   = LuckyMedia("promo-warbank-stockist.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-warbank-stockist",
     },
     {
         folder = "Luckys_Character_Mount",
         name   = "Lucky's Character Mount",
         desc   = "Summons a random racial or class mount. Per-character list, auto-populated.",
-        icon   = "Interface\\AddOns\\Luckys_Utils\\Media\\promo-character-mount.tga",
+        icon   = LuckyMedia("promo-character-mount.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-character-mount",
     },
     {
         folder = "Luckys_Wardrobe",
         name   = "Lucky's Wardrobe",
         desc   = "Find the sets you can still finish, and hear about it the moment a piece drops.",
-        icon   = "Interface\\AddOns\\Luckys_Utils\\Media\\promo-wardrobe.tga",
+        icon   = LuckyMedia("promo-wardrobe.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-wardrobe",
     },
 }

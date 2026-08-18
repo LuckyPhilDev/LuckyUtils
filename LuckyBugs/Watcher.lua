@@ -48,7 +48,8 @@ local function reportText(entry)
     local folderVersion = entry.folder and C_AddOns.GetAddOnMetadata(entry.folder, "Version")
     return LuckyBugs.FormatReport(entry, {
         addon  = addonTitle(entry) .. " " .. (folderVersion or "?"),
-        utils  = C_AddOns.GetAddOnMetadata("Luckys_Utils", "Version") or "?",
+        utils  = C_AddOns.GetAddOnMetadata("Luckys_Utils", "Version")
+            or ("1.0 r" .. LibStub.minors["LuckysUtils-1.0"]),
         build  = version .. " (" .. build .. ")",
         locale = GetLocale(),
     })
