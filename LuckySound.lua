@@ -1,6 +1,8 @@
 -- LuckySound: Shared sound utilities for Lucky Phil's addons.
 -- Provides helpers for playing addon sounds and WoW built-in sounds.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckySound = LuckySound or {}
 
 --- Build the WoW-style Interface path for a sound file inside an addon folder.

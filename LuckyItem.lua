@@ -17,6 +17,8 @@
 --
 -- The callback receives a normalised table, or nil if the id could not load.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyItem = LuckyItem or {}
 
 local tinsert = table.insert
@@ -25,8 +27,12 @@ local tinsert = table.insert
 -- Items
 -- ---------------------------------------------------------------------------
 
-local itemCache   = {}  -- itemID -> resolved info table (session lifetime)
-local itemPending = {}  -- itemID -> { callback, ... } while a load is in flight
+-- Caches live on the global so a newer embedded copy inherits resolved items
+-- and in-flight callback queues instead of starting cold.
+LuckyItem._itemCache   = LuckyItem._itemCache or {}
+LuckyItem._itemPending = LuckyItem._itemPending or {}
+local itemCache   = LuckyItem._itemCache    -- itemID -> resolved info table (session lifetime)
+local itemPending = LuckyItem._itemPending  -- itemID -> { callback, ... } while a load is in flight
 
 -- Read every field we expose from the now-loaded item.
 local function buildItemInfo(itemID)
@@ -157,8 +163,10 @@ end
 -- Spells
 -- ---------------------------------------------------------------------------
 
-local spellCache   = {}
-local spellPending = {}
+LuckyItem._spellCache   = LuckyItem._spellCache or {}
+LuckyItem._spellPending = LuckyItem._spellPending or {}
+local spellCache   = LuckyItem._spellCache
+local spellPending = LuckyItem._spellPending
 
 local function buildSpellInfo(spellID)
     local data = C_Spell.GetSpellInfo(spellID)

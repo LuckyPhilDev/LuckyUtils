@@ -1,5 +1,7 @@
 -- LuckyUtils: General-purpose utility functions for Lucky Phil's addons.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyUtils = LuckyUtils or {}
 
 -- ---------------------------------------------------------------------------

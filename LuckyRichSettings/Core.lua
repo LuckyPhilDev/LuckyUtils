@@ -39,6 +39,8 @@
 -- and Panel.lua, loaded in that order. Internals are shared through `ns.Rich`,
 -- this addon's private namespace table (the host addon's when embedded), so
 -- the split adds no globals.
+if LuckysUtilsSkipLoad then return end
+
 local ns = select(2, ...)
 ns.Rich = {}
 local Rich = ns.Rich

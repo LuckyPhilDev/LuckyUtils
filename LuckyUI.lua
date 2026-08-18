@@ -2,6 +2,8 @@
 -- Provides a dark/gold themed color palette, font constants, backdrop
 -- definitions, and frame helper functions.
 
+if LuckysUtilsSkipLoad then return end
+
 LuckyUI = LuckyUI or {}
 
 local SOLID = "Interface\\Buttons\\WHITE8x8"

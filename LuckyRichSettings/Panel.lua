@@ -1,6 +1,8 @@
 -- LuckyRichSettings/Panel.lua: left nav, group management and lazy building,
 -- the What's New list, and the LuckySettings:NewRichPanel factory.
 
+if LuckysUtilsSkipLoad then return end
+
 local ns = select(2, ...)
 local Rich = ns.Rich
 
