@@ -1,5 +1,5 @@
 -- LuckyRichSettings/Rows.lua: the row builders attached to RichGroup (toggles,
--- sliders, multi-selects, buttons, labels, notices, bottom rows, sections,
+-- sliders, selects, multi-selects, buttons, labels, notices, bottom rows, sections,
 -- fill regions, and What's New cards), plus enabled-state propagation and the
 -- live re-read of function-valued row state.
 
@@ -84,6 +84,7 @@ local function refreshLiveValues(builder)
             if s.getValue and s.slider then
                 s.slider:SetValue(s.getValue())
             end
+            if s.refreshSelect then s.refreshSelect() end
         end
         -- Second pass: parents are fresh now, so dependent rows re-lock.
         for _, s in ipairs(g.settings) do
@@ -373,6 +374,82 @@ function RichGroup:MultiSelect(opts)
         rowHover = hl,
         dropdown = dd,
         parent   = opts.parent,
+    }
+    table.insert(self.settings, setting)
+    self.byLabel[opts.label] = setting
+
+    if opts.parent then
+        setting.parentSetting = self.byLabel[opts.parent]
+        applyEnabled(setting)
+    end
+
+    attachHover(setting, self, { dd })
+    return self
+end
+
+-- ─── Select (single choice from a fixed list) ────────────────────────────────
+-- MultiSelect's sibling for a setting that holds one value: the same row shape
+-- and dropdown template, radio buttons instead of check boxes. `value` may be a
+-- plain key or a zero-arg function, which is re-read every time the panel opens.
+
+function RichGroup:Select(opts)
+    local row, hl = makeRow(self, opts, 32)
+    local indent = indentForOpts(opts)
+
+    local label = row:CreateFontString(nil, "OVERLAY")
+    label:SetFont(R_FONT, 12, "")
+    label:SetPoint("LEFT", indent, 0)
+    label:SetTextColor(R.text[1], R.text[2], R.text[3])
+    label:SetText(opts.label)
+
+    if isVersionRecent(self.panel, opts.since) then
+        makeNewBadge(row, label)
+    end
+
+    local dd = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
+    dd:SetPoint("RIGHT", -8, 0)
+    UIDropDownMenu_SetWidth(dd, opts.width or 150)
+
+    local function labelFor(key)
+        for _, o in ipairs(opts.options) do
+            if o.key == key then return o.label end
+        end
+    end
+
+    local function refresh()
+        UIDropDownMenu_SetText(dd, labelFor(resolveValue(opts.value)) or opts.placeholder or "")
+    end
+
+    UIDropDownMenu_Initialize(dd, function(_, level)
+        local selected = resolveValue(opts.value)
+        for _, o in ipairs(opts.options) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text    = o.label
+            info.checked = o.key == selected
+            info.func    = function()
+                if opts.onSelect then opts.onSelect(o.key) end
+                refresh()
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    refresh()
+
+    local setting = {
+        type     = "Select",
+        label    = opts.label,
+        desc     = opts.desc,
+        tooltip  = opts.tooltip,
+        note     = opts.note,
+        image    = opts.image,
+        imageSize = opts.imageSize,
+        warning  = opts.warning,
+        since    = opts.since,
+        row      = row,
+        rowHover = hl,
+        dropdown = dd,
+        parent   = opts.parent,
+        refreshSelect = refresh,
     }
     table.insert(self.settings, setting)
     self.byLabel[opts.label] = setting

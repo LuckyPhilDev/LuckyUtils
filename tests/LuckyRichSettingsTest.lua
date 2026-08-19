@@ -1,4 +1,6 @@
 -- luacheck: globals CreateFrame LuckySettings LuckyUI C_AddOns
+-- luacheck: globals UIDropDownMenu_SetWidth UIDropDownMenu_SetText UIDropDownMenu_Initialize
+-- luacheck: globals UIDropDownMenu_CreateInfo UIDropDownMenu_AddButton
 
 -- Covers where LuckyRichSettings puts rows: the What's New list folds into the
 -- first group as a scrolling region, and that region has to end above the
@@ -58,6 +60,21 @@ LuckyUI = stub({
 })
 LuckySettings = stub({ Register = function() return "category" end })
 C_AddOns = stub({ GetAddOnMetadata = function() return "1.0.0" end })
+
+-- Dropdown rows drive the legacy UIDropDownMenu API; the stubs keep the menu's
+-- buttons where the test can read them back.
+local menuButtons = {}
+UIDropDownMenu_SetWidth   = noop
+UIDropDownMenu_SetText    = function(dd, text) dd.text = text end
+UIDropDownMenu_CreateInfo = function() return {} end
+UIDropDownMenu_Initialize = function(dd, fn) dd.initialize = fn end
+UIDropDownMenu_AddButton  = function(info) menuButtons[#menuButtons + 1] = info end
+
+local function openMenu(dd)
+    menuButtons = {}
+    dd.initialize(dd, 1)
+    return menuButtons
+end
 
 local ns = {}
 dofile("LibStub.lua")
@@ -146,5 +163,35 @@ named:Finalize()
 for _, s in ipairs(host.settings) do
     assert(s.name ~= "What's New", "the host group does not repeat its own name as a section")
 end
+
+-------------------------------------------------------------------------------
+-- Select shows the option matching its value, and writes the key back.
+-------------------------------------------------------------------------------
+local minimapClick = "both"
+local clicks = panel:Group("Clicks")
+clicks:Select({
+    label    = "Left-click opens",
+    options  = {
+        { key = "both",     label = "Wishlist and loot browser" },
+        { key = "wishlist", label = "Wishlist only" },
+    },
+    value    = function() return minimapClick end,
+    onSelect = function(key) minimapClick = key end,
+})
+
+local select = findSetting(clicks, "Left-click opens")
+assert(select.dropdown.text == "Wishlist and loot browser", "the row reads the current value's label")
+
+local buttons = openMenu(select.dropdown)
+assert(#buttons == 2, "every option gets a menu button")
+assert(buttons[1].checked == true and buttons[2].checked == false, "only the current option is checked")
+
+buttons[2].func()
+assert(minimapClick == "wishlist", "picking an option writes its key back")
+assert(select.dropdown.text == "Wishlist only", "and the row follows the new value")
+
+minimapClick = "both"
+select.refreshSelect()
+assert(select.dropdown.text == "Wishlist and loot browser", "a value changed elsewhere is re-read on open")
 
 print("LuckyRichSettings tests passed")

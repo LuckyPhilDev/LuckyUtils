@@ -13,12 +13,15 @@
 --                     checked = function() return db.foo end,
 --                     onToggle = function(v) db.foo = v end }
 --           g:Slider{ label = "...", min = 1, max = 10, value = ..., onChanged = ... }
+--           g:Select{ label = "...", options = {{ key = "a", label = "A" }},
+--                     value = function() return db.pick end,
+--                     onSelect = function(key) db.pick = key end }
 --           g:Button{ label = "Configure…", parent = "Some Toggle", onClick = ... }
 --       end)
 --   end)
--- Toggle `checked` and Slider `value` accept a plain value or a zero-arg
--- function. Function-valued state is re-read every time the panel opens, so
--- changes made while it was closed never show stale controls.
+-- Toggle `checked`, Slider `value` and Select `value` accept a plain value or a
+-- zero-arg function. Function-valued state is re-read every time the panel opens,
+-- so changes made while it was closed never show stale controls.
 -- The panel lambda runs once, the first time the panel is shown, so nothing is
 -- built for players who never open the settings, and values like
 -- `checked = db.foo` are read at open time rather than at login. Finalize()

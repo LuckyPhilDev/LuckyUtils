@@ -1,3 +1,8 @@
+## [1.12.0] - 2026-08-19
+
+### Added
+- `RichGroup:Select(opts)` adds a single-choice dropdown row to a rich settings panel: `options` is a list of `{ key, label }`, `value` is the current key (or a function returning it, re-read every time the panel opens), and `onSelect(key)` writes the choice back. Locks and indents under `parent` like the other rows.
+
 ## [1.11.1] - 2026-08-18
 
 ### Added
