@@ -1,6 +1,4 @@
 -- luacheck: globals CreateFrame LuckySettings LuckyUI C_AddOns
--- luacheck: globals UIDropDownMenu_SetWidth UIDropDownMenu_SetText UIDropDownMenu_Initialize
--- luacheck: globals UIDropDownMenu_CreateInfo UIDropDownMenu_AddButton
 
 -- Covers where LuckyRichSettings puts rows: the What's New list folds into the
 -- first group as a scrolling region, and that region has to end above the
@@ -46,6 +44,9 @@ local function newFrame(kind, parent)
     })
     if kind == "ScrollFrame" then
         frame.ScrollBar = stub({ SetShown = function(self, shown) self.shown = shown end })
+    elseif kind == "DropdownButton" then
+        frame.SetupMenu       = function(self, fn) self.menu = fn end
+        frame.SetDefaultText  = function(self, text) self.text = text end
     end
     return frame
 end
@@ -61,19 +62,16 @@ LuckyUI = stub({
 LuckySettings = stub({ Register = function() return "category" end })
 C_AddOns = stub({ GetAddOnMetadata = function() return "1.0.0" end })
 
--- Dropdown rows drive the legacy UIDropDownMenu API; the stubs keep the menu's
--- buttons where the test can read them back.
-local menuButtons = {}
-UIDropDownMenu_SetWidth   = noop
-UIDropDownMenu_SetText    = function(dd, text) dd.text = text end
-UIDropDownMenu_CreateInfo = function() return {} end
-UIDropDownMenu_Initialize = function(dd, fn) dd.initialize = fn end
-UIDropDownMenu_AddButton  = function(info) menuButtons[#menuButtons + 1] = info end
-
+-- Running a Select's menu generator against a stub root, so the test can read
+-- back the entries it would have created and pick one.
 local function openMenu(dd)
-    menuButtons = {}
-    dd.initialize(dd, 1)
-    return menuButtons
+    local entries = {}
+    dd.menu(dd, stub({
+        CreateRadio = function(_, text, isSelected, setSelected)
+            entries[#entries + 1] = { text = text, checked = isSelected(), func = setSelected }
+        end,
+    }))
+    return entries
 end
 
 local ns = {}

@@ -64,7 +64,11 @@ local function applyEnabled(setting)
     if setting.slider   then setting.slider:SetEnabled(enabled) end
     if setting.button   then setting.button:SetEnabled(enabled) end
     if setting.dropdown then
-        if enabled then
+        -- Select is on the modern dropdown, which is a button; MultiSelect is
+        -- still on the legacy frame, which has its own enable calls.
+        if setting.dropdown.SetEnabled then
+            setting.dropdown:SetEnabled(enabled)
+        elseif enabled then
             UIDropDownMenu_EnableDropDown(setting.dropdown)
         else
             UIDropDownMenu_DisableDropDown(setting.dropdown)
@@ -388,9 +392,11 @@ function RichGroup:MultiSelect(opts)
 end
 
 -- ─── Select (single choice from a fixed list) ────────────────────────────────
--- MultiSelect's sibling for a setting that holds one value: the same row shape
--- and dropdown template, radio buttons instead of check boxes. `value` may be a
--- plain key or a zero-arg function, which is re-read every time the panel opens.
+-- MultiSelect's sibling for a setting that holds one value: the same row shape,
+-- radio buttons instead of check boxes. It is on the modern dropdown rather
+-- than MultiSelect's legacy one, whose side flanges spill well past the width
+-- it is given and crowd the row label. `value` may be a plain key or a zero-arg
+-- function, which is re-read every time the panel opens.
 
 function RichGroup:Select(opts)
     local row, hl = makeRow(self, opts, 32)
@@ -406,9 +412,9 @@ function RichGroup:Select(opts)
         makeNewBadge(row, label)
     end
 
-    local dd = CreateFrame("Frame", nil, row, "UIDropDownMenuTemplate")
-    dd:SetPoint("RIGHT", -8, 0)
-    UIDropDownMenu_SetWidth(dd, opts.width or 150)
+    local dd = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
+    dd:SetPoint("RIGHT", -14, 0)
+    dd:SetWidth(opts.width or 190)
 
     local function labelFor(key)
         for _, o in ipairs(opts.options) do
@@ -417,20 +423,17 @@ function RichGroup:Select(opts)
     end
 
     local function refresh()
-        UIDropDownMenu_SetText(dd, labelFor(resolveValue(opts.value)) or opts.placeholder or "")
+        dd:SetDefaultText(labelFor(resolveValue(opts.value)) or opts.placeholder or "")
     end
 
-    UIDropDownMenu_Initialize(dd, function(_, level)
-        local selected = resolveValue(opts.value)
+    dd:SetupMenu(function(_, root)
         for _, o in ipairs(opts.options) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text    = o.label
-            info.checked = o.key == selected
-            info.func    = function()
-                if opts.onSelect then opts.onSelect(o.key) end
-                refresh()
-            end
-            UIDropDownMenu_AddButton(info, level)
+            root:CreateRadio(o.label,
+                function() return resolveValue(opts.value) == o.key end,
+                function()
+                    if opts.onSelect then opts.onSelect(o.key) end
+                    refresh()
+                end)
         end
     end)
     refresh()
