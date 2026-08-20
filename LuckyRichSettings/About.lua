@@ -8,6 +8,7 @@ local Rich = ns.Rich
 
 local R                = Rich.R
 local R_FONT           = Rich.Font
+local S                = LuckyUtilsStrings.richSettings
 local rFillBg          = Rich.FillBg
 local rEdgeRule        = Rich.EdgeRule
 local RichBuilder      = Rich.RichBuilder
@@ -95,7 +96,7 @@ local function buildAbout(panel)
     local heading = A:CreateFontString(nil, "OVERLAY")
     heading:SetFont(R_FONT, 10, "")
     heading:SetPoint("TOPLEFT", 12, -10)
-    heading:SetText("ABOUT")
+    heading:SetText(S.about)
     heading:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
     A.headingAnchor = heading
 
@@ -148,7 +149,7 @@ local function buildAbout(panel)
 
     -- Offered only when the dependency is installed and merely switched off,
     -- which is the one dependency failure the player can put right from here.
-    local enableBtn = LuckyUI.CreateButton(warnHolder, "Enable and Reload", 140, 22, "primary")
+    local enableBtn = LuckyUI.CreateButton(warnHolder, S.enableAndReload, 140, 22, "primary")
     enableBtn:SetPoint("TOPLEFT", warn, "BOTTOMLEFT", 0, -8)
     enableBtn:SetScript("OnClick", function(self)
         if not self.addonName then return end
@@ -328,7 +329,7 @@ local function aboutShow(panel, s)
     end
 
     if s.type == "Slider" then
-        A.range:SetText(string.format("Range: %s – %s%s",
+        A.range:SetText(S.range:format(
             tostring(s.min), tostring(s.max), s.suffix and (" " .. s.suffix) or ""))
         A.rangeHolder:Show()
     else
@@ -337,13 +338,13 @@ local function aboutShow(panel, s)
 
     if s.type == "Toggle" then
         if s.disabled then
-            A.status:SetText("|A:common-icon-redx:12:12|a UNAVAILABLE")
+            A.status:SetText(S.unavailable)
             A.status:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
         elseif s.checkbox and s.checkbox:GetChecked() then
-            A.status:SetText("|A:common-icon-checkmark:12:12|a ENABLED")
+            A.status:SetText(S.enabled)
             A.status:SetTextColor(R.success[1], R.success[2], R.success[3])
         else
-            A.status:SetText("|A:common-icon-redx:12:12|a DISABLED")
+            A.status:SetText(S.disabled)
             A.status:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
         end
         A.status:Show()

@@ -21,7 +21,8 @@ local refreshLiveValues = Rich.refreshLiveValues
 local resolveValue      = Rich.resolveValue
 
 local PREFIX = "|cffc9a84c[LuckyRichSettings]|r"
-local WHATS_NEW = "What's New"
+local S = LuckyUtilsStrings.richSettings
+local WHATS_NEW = S.whatsNew
 local devLog -- forward declaration; initialized lazily
 
 local function Log(...)
@@ -271,15 +272,15 @@ local function makeTitleVersion(titleBar, titleL, version)
     local text = hit:CreateFontString(nil, "OVERLAY")
     text:SetFont(R_FONT, 11, "")
     text:SetPoint("LEFT")
-    text:SetText("(v" .. version .. ")")
+    text:SetText(S.versionTag:format(version))
     text:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
     hit:SetSize(text:GetStringWidth(), 18)
 
     hit:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
-        GameTooltip:AddLine("Version " .. version)
-        GameTooltip:AddLine("Lucky's Utils v"
-            .. (C_AddOns.GetAddOnMetadata("Luckys_Utils", "Version")
+        GameTooltip:AddLine(S.versionTooltip:format(version))
+        GameTooltip:AddLine(S.utilsVersion:format(
+            C_AddOns.GetAddOnMetadata("Luckys_Utils", "Version")
                 or ("1.0 r" .. LibStub.minors["LuckysUtils-1.0"])), 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
@@ -290,9 +291,9 @@ end
 -- Settings every addon in the suite has, offered as title bar buttons so they
 -- don't each need a General group holding two rows.
 local TITLE_TOGGLES = {
-    { key = "devMode", label = "Dev Mode",
+    { key = "devMode", label = S.devMode,
       icon = LuckyMedia("dev-mode.tga") },
-    { key = "minimapButton", label = "Minimap Button",
+    { key = "minimapButton", label = S.minimapButton,
       icon = LuckyMedia("minimap-button.tga") },
 }
 

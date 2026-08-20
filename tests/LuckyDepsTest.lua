@@ -34,6 +34,8 @@ C_AddOns = {
     EnableAddOn = function(name) table.insert(enabledCalls, name) end,
 }
 
+dofile("LuckyStrings.lua")
+dofile("Strings.lua")
 dofile("LuckyDeps.lua")
 
 local S = LuckyDeps.Status

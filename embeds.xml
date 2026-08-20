@@ -1,6 +1,8 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <Script file="LibStub.lua"/>
     <Script file="VersionGate.lua"/>
+    <Script file="LuckyStrings.lua"/>
+    <Script file="Strings.lua"/>
     <Script file="LuckyBugs\Core.lua"/>
     <Script file="LuckyBugs\Watcher.lua"/>
     <Script file="LuckyUtils.lua"/>

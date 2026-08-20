@@ -19,6 +19,8 @@ if LuckysUtilsSkipLoad then return end
 
 LuckyProfiles = LuckyProfiles or {}
 
+local S = LuckyUtilsStrings.profiles
+
 local PREFIX = "LP1"  -- bump if the wire format ever changes incompatibly
 
 -- ---------------------------------------------------------------------------
@@ -236,40 +238,40 @@ end
 ---@return table|nil decoded, string|nil errorMessage
 function LuckyProfiles:Decode(str)
     if type(str) ~= "string" then
-        return nil, "Nothing to import."
+        return nil, S.nothingToImport
     end
     str = strtrim(str)
     if str == "" then
-        return nil, "Nothing to import."
+        return nil, S.nothingToImport
     end
 
     local prefix, sum, payload = str:match("^(LP%d+):(%x+):(.+)$")
     if not prefix then
-        return nil, "This does not look like a Lucky share string."
+        return nil, S.notAShareString
     end
     if prefix ~= PREFIX then
-        return nil, "This share string was made by a newer version. Please update the addon."
+        return nil, S.newerVersion
     end
 
     local body = base64Decode(payload)
     if not body or body == "" then
-        return nil, "The share string is corrupted."
+        return nil, S.corrupted
     end
     if string.format("%08x", adler32(body)) ~= sum then
-        return nil, "The share string is corrupted or incomplete."
+        return nil, S.incomplete
     end
 
     local ok, result, finalPos = pcall(parseValue, body, 1, 0)
     if not ok then
-        return nil, "The share string is corrupted."
+        return nil, S.corrupted
     end
     if type(result) ~= "table" then
-        return nil, "The share string did not contain a profile."
+        return nil, S.noProfile
     end
     -- Reject trailing junk after a valid table: a well-formed string is fully
     -- consumed, so leftover bytes mean tampering or truncation.
     if finalPos ~= #body + 1 then
-        return nil, "The share string is corrupted."
+        return nil, S.corrupted
     end
     return result
 end
@@ -354,15 +356,15 @@ end
 function LuckyProfiles:ShowExport(title, tbl)
     local str = self:Encode(tbl)
     if not panels.export then
-        panels.export = buildPanel("Export", function(frame)
+        panels.export = buildPanel(S.exportTitle, function(frame)
             -- "Select All" convenience: re-highlight so the user can Ctrl+C.
             frame.edit:SetFocus()
             frame.edit:HighlightText()
-        end, "Select All")
+        end, S.selectAll)
     end
     local frame = panels.export
-    frame.titleText:SetText(title or "Export")
-    frame.hint:SetText("Copy this string (Ctrl+C) and share it. The other player imports it.")
+    frame.titleText:SetText(title or S.exportTitle)
+    frame.hint:SetText(S.exportHint)
     frame.status:SetText("")
     frame.edit:SetText(str)
     frame.edit:SetCursorPosition(0)
@@ -377,22 +379,22 @@ end
 ---@param onAccept fun(decoded: table)
 function LuckyProfiles:ShowImport(title, onAccept)
     if not panels.import then
-        panels.import = buildPanel("Import", function(frame)
+        panels.import = buildPanel(S.importTitle, function(frame)
             local decoded, err = LuckyProfiles:Decode(frame.edit:GetText())
             if not decoded then
                 local c = LuckyUI.C
                 frame.status:SetTextColor(c.danger[1], c.danger[2], c.danger[3])
-                frame.status:SetText(err or "Could not read that string.")
+                frame.status:SetText(err or S.readFailed)
                 return
             end
             frame:Hide()
             if frame.onAccept then frame.onAccept(decoded) end
-        end, "Import")
+        end, S.importTitle)
     end
     local frame = panels.import
     frame.onAccept = onAccept
-    frame.titleText:SetText(title or "Import")
-    frame.hint:SetText("Paste a Lucky share string below, then click Import.")
+    frame.titleText:SetText(title or S.importTitle)
+    frame.hint:SetText(S.importHint)
     frame.status:SetText("")
     frame.edit:SetText("")
     frame:Show()

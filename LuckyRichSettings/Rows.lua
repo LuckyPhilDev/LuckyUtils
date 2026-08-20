@@ -10,6 +10,7 @@ local Rich = ns.Rich
 
 local R               = Rich.R
 local R_FONT          = Rich.Font
+local S               = LuckyUtilsStrings.richSettings
 local RichGroup       = Rich.RichGroup
 local isVersionRecent = Rich.isVersionRecent
 
@@ -339,10 +340,10 @@ function RichGroup:MultiSelect(opts)
     end
 
     local function defaultSummary(labels)
-        if #labels == 0 then return "None" end
-        if #labels == #opts.options then return "All" end
+        if #labels == 0 then return S.selectNone end
+        if #labels == #opts.options then return S.selectAll end
         if #labels <= 2 then return table.concat(labels, ", ") end
-        return string.format("%d of %d", #labels, #opts.options)
+        return S.selectSome:format(#labels, #opts.options)
     end
 
     local function refreshSummary()

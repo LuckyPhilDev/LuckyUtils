@@ -61,7 +61,7 @@ function LuckySettings:Open(category)
     Log("Open called, category:", tostring(category))
     if not category then
         Log("FAIL — category is nil, cannot open")
-        print("Settings panel not registered.")
+        print(LuckyUtilsStrings.settings.notRegistered)
         return
     end
     if not Settings or not Settings.OpenToCategory then

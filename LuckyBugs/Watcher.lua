@@ -10,6 +10,8 @@ if LuckysUtilsSkipLoad then return end
 -- standalone. Nil under a plain-Lua test harness, hence the fallback.
 local ADDON_NAME = ... or "Luckys_Utils"
 
+local S = LuckyUtilsStrings.bugs
+
 local DISCORD_URL = "https://discord.gg/ptTtYyAjdZ"
 
 local PANEL_W, PANEL_H = 540, 420
@@ -38,7 +40,7 @@ local function promptEnabled()
 end
 
 local function addonTitle(entry)
-    if not entry or not entry.folder then return "A Lucky addon" end
+    if not entry or not entry.folder then return S.unknownAddon end
     local title = C_AddOns.GetAddOnMetadata(entry.folder, "Title") or entry.folder
     return (title:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
 end
@@ -70,8 +72,8 @@ local function refreshWindow()
     local entry = entries[windowIndex]
     if not entry then return end
 
-    window.counter:SetText(string.format("Error %d of %d%s",
-        windowIndex, #entries, entry.previousSession and " (earlier session)" or ""))
+    window.counter:SetText(S.counter:format(
+        windowIndex, #entries, entry.previousSession and S.earlierSession or ""))
     setNavEnabled(window.prev, windowIndex < #entries)
     setNavEnabled(window.next, windowIndex > 1)
 
@@ -90,7 +92,7 @@ local function buildWindow()
     frame:Hide()
     tinsert(UISpecialFrames, frame:GetName())  -- closable with Escape
 
-    LuckyUI.CreateHeader(frame, "Report a Lucky Addon Error")
+    LuckyUI.CreateHeader(frame, S.windowTitle)
 
     local hint = frame:CreateFontString(nil, "OVERLAY")
     hint:SetFont(LuckyUI.BODY_FONT, 12)
@@ -99,14 +101,14 @@ local function buildWindow()
     hint:SetPoint("TOPRIGHT", -14, -42)
     hint:SetJustifyH("LEFT")
     hint:SetSpacing(3)
-    hint:SetText("Copy the report below with Ctrl+C, then paste it on the Discord so it can be fixed.")
+    hint:SetText(S.windowHint)
 
     -- Discord link, in its own box so it can be selected and copied separately.
     local linkLabel = frame:CreateFontString(nil, "OVERLAY")
     linkLabel:SetFont(LuckyUI.BODY_FONT, 12)
     linkLabel:SetTextColor(c.goldAccent[1], c.goldAccent[2], c.goldAccent[3])
     linkLabel:SetPoint("TOPLEFT", hint, "BOTTOMLEFT", 0, -10)
-    linkLabel:SetText("Discord")
+    linkLabel:SetText(S.discordLabel)
 
     local linkBg = CreateFrame("Frame", nil, frame, "BackdropTemplate")
     linkBg:SetBackdrop(LuckyUI.Backdrop)
@@ -158,18 +160,18 @@ local function buildWindow()
     counter:SetPoint("BOTTOMLEFT", 14, 20)
     frame.counter = counter
 
-    local close = LuckyUI.CreateButton(frame, "Close", 80, 26, "secondary")
+    local close = LuckyUI.CreateButton(frame, S.close, 80, 26, "secondary")
     close:SetPoint("BOTTOMRIGHT", -14, 12)
     close:SetScript("OnClick", function() frame:Hide() end)
 
-    local selectAll = LuckyUI.CreateButton(frame, "Select All", 100, 26, "primary")
+    local selectAll = LuckyUI.CreateButton(frame, S.selectAll, 100, 26, "primary")
     selectAll:SetPoint("RIGHT", close, "LEFT", -8, 0)
     selectAll:SetScript("OnClick", function()
         edit:SetFocus()
         edit:HighlightText()
     end)
 
-    local nextBtn = LuckyUI.CreateButton(frame, "Newer", 70, 26, "secondary")
+    local nextBtn = LuckyUI.CreateButton(frame, S.newer, 70, 26, "secondary")
     nextBtn:SetPoint("RIGHT", selectAll, "LEFT", -16, 0)
     nextBtn:SetScript("OnClick", function()
         windowIndex = windowIndex - 1
@@ -177,7 +179,7 @@ local function buildWindow()
     end)
     frame.next = nextBtn
 
-    local prevBtn = LuckyUI.CreateButton(frame, "Older", 70, 26, "secondary")
+    local prevBtn = LuckyUI.CreateButton(frame, S.older, 70, 26, "secondary")
     prevBtn:SetPoint("RIGHT", nextBtn, "LEFT", -6, 0)
     prevBtn:SetScript("OnClick", function()
         windowIndex = windowIndex + 1
@@ -193,7 +195,7 @@ end
 function LuckyBugs:Show(index)
     local entries = recorder:Entries()
     if #entries == 0 then
-        print(LuckyUI.WC.goldAccent .. "LuckyBugs:" .. LuckyUI.WC.reset .. " no Lucky addon errors captured.")
+        print(LuckyUI.WC.goldAccent .. S.prefix .. LuckyUI.WC.reset .. S.noneCaptured)
         return
     end
 
@@ -208,16 +210,15 @@ end
 -- ---------------------------------------------------------------------------
 
 StaticPopupDialogs["LUCKY_BUGS_REPORT"] = {
-    text           = "%s ran into an error.\n\nWould you like to report it on the Discord?",
-    button1        = "Show Report",
-    button2        = "Not Now",
-    button3        = "Stop Asking",
+    text           = S.promptText,
+    button1        = S.promptShow,
+    button2        = S.promptNotNow,
+    button3        = S.promptStop,
     OnAccept       = function() LuckyBugs:Show() end,
     OnAlt          = function()
         local db = settings()
         if db then db.prompt = false end
-        print(LuckyUI.WC.goldAccent .. "LuckyBugs:" .. LuckyUI.WC.reset
-            .. " error reports will not prompt again. Use /luckybugs on to turn them back on.")
+        print(LuckyUI.WC.goldAccent .. S.prefix .. LuckyUI.WC.reset .. S.promptsOff)
     end,
     timeout        = 0,
     whileDead      = true,
@@ -324,13 +325,13 @@ end)
 
 SLASH_LUCKYBUGS1 = "/luckybugs"
 SlashCmdList["LUCKYBUGS"] = function(msg)
-    local prefix = LuckyUI.WC.goldAccent .. "LuckyBugs:" .. LuckyUI.WC.reset
+    local prefix = LuckyUI.WC.goldAccent .. S.prefix .. LuckyUI.WC.reset
     local arg = msg:lower():match("^%s*(%a*)")
     local db = settings()
 
     if arg == "on" or arg == "off" then
         if db then db.prompt = (arg == "on") end
-        print(prefix .. " error report prompts " .. (arg == "on" and "on" or "off") .. ".")
+        print(prefix .. S.promptsToggled:format(arg == "on" and S.on or S.off))
         return
     end
 
@@ -339,5 +340,5 @@ SlashCmdList["LUCKYBUGS"] = function(msg)
         return
     end
 
-    print(prefix .. " /luckybugs to see captured errors, /luckybugs on or off for the prompt.")
+    print(prefix .. S.usage)
 end

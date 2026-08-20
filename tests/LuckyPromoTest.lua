@@ -6,6 +6,8 @@
 StaticPopupDialogs, SlashCmdList = {}, {}
 dofile("LibStub.lua")
 loadfile("VersionGate.lua")("Luckys_Utils")
+dofile("LuckyStrings.lua")
+dofile("Strings.lua")
 loadfile("LuckyPromo.lua")("Luckys_Utils", {})
 
 assert(LuckyPromo:GetIcon("Luckys_Wardrobe"), "a suite addon has artwork")

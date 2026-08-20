@@ -46,6 +46,8 @@ local handler = function() previousHandlerCalls = previousHandlerCalls + 1 end
 geterrorhandler = function() return handler end
 seterrorhandler = function(h) handler = h end
 
+dofile("LuckyStrings.lua")
+dofile("Strings.lua")
 dofile("LuckyUI.lua")
 dofile("LuckyBugs/Core.lua")
 dofile("LuckyBugs/Watcher.lua")

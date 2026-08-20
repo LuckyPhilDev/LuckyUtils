@@ -46,8 +46,9 @@ LuckyDeps.Status = {
 ---@return string|nil message
 ---@return string status one of LuckyDeps.Status
 function LuckyDeps:Check(addonName, minVersion)
-    local versionSuffix = minVersion and (" version " .. minVersion) or ""
-    local failMessage = addonName .. versionSuffix .. " is required for this feature."
+    local S = LuckyUtilsStrings.deps
+    local versionSuffix = minVersion and S.versionSuffix:format(minVersion) or ""
+    local failMessage = S.required:format(addonName .. versionSuffix)
 
     if C_AddOns.IsAddOnLoaded(addonName) then
         if minVersion then
@@ -63,7 +64,7 @@ function LuckyDeps:Check(addonName, minVersion)
     -- player can undo from here.
     local _, _, _, _, reason = C_AddOns.GetAddOnInfo(addonName)
     if reason == "DISABLED" or reason == "DEP_DISABLED" then
-        return false, addonName .. " is installed but switched off for this character.",
+        return false, S.disabled:format(addonName),
             self.Status.DISABLED
     end
 

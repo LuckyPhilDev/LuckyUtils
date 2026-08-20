@@ -8,6 +8,8 @@
 
 LibStub.lua
 VersionGate.lua
+LuckyStrings.lua
+Strings.lua
 LuckyBugs\Core.lua
 LuckyBugs\Watcher.lua
 LuckyUtils.lua

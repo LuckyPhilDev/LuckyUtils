@@ -8,12 +8,14 @@ if LuckysUtilsSkipLoad then return end
 
 LuckyPromo = LuckyPromo or {}
 
-local SECTION_TITLE = "More from Lucky Phil"
+local S = LuckyUtilsStrings.promo
+
+local SECTION_TITLE = S.sectionTitle
 
 -- Always first in the icon row, whatever else is shown.
 local DISCORD = {
-    name = "Discord",
-    desc = "Get support, report a bug or suggest a feature.",
+    name = S.discord.name,
+    desc = S.discord.desc,
     icon = LuckyMedia("discord.tga"),
     url  = "https://discord.gg/ptTtYyAjdZ",
 }
@@ -22,43 +24,43 @@ local DISCORD = {
 local ADDONS = {
     {
         folder = "Luckys_Grab_Bag",
-        name   = "Lucky's Grab-bag",
-        desc   = "A collection of small quality-of-life features.",
+        name   = S.grabBag.name,
+        desc   = S.grabBag.desc,
         icon   = LuckyMedia("promo-grab-bag.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-grab-bag",
     },
     {
         folder = "Luckys_Loot_Wishlist",
-        name   = "Lucky's Loot Wishlist",
-        desc   = "Track loot from the Adventure Guide and manage a per-character wishlist.",
+        name   = S.lootWishlist.name,
+        desc   = S.lootWishlist.desc,
         icon   = LuckyMedia("promo-loot-wishlist.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-loot-wishlist",
     },
     {
         folder = "Luckys_Warbank_Stockist",
-        name   = "Lucky's Warbank Stockist",
-        desc   = "Automatically manages item quantities between your bags and the Warband Bank.",
+        name   = S.warbankStockist.name,
+        desc   = S.warbankStockist.desc,
         icon   = LuckyMedia("promo-warbank-stockist.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-warbank-stockist",
     },
     {
         folder = "Luckys_Character_Mount",
-        name   = "Lucky's Character Mount",
-        desc   = "Summons a random racial or class mount. Per-character list, auto-populated.",
+        name   = S.characterMount.name,
+        desc   = S.characterMount.desc,
         icon   = LuckyMedia("promo-character-mount.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-character-mount",
     },
     {
         folder = "Luckys_Wardrobe",
-        name   = "Lucky's Wardrobe",
-        desc   = "Find the sets you can still finish, and hear about it the moment a piece drops.",
+        name   = S.wardrobe.name,
+        desc   = S.wardrobe.desc,
         icon   = LuckyMedia("promo-wardrobe.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-wardrobe",
     },
 }
 
 StaticPopupDialogs["LUCKY_PROMO_COPY_URL"] = {
-    text         = "Copy the link:",
+    text         = S.copyLinkTitle,
     button1      = CLOSE,
     hasEditBox   = 1,
     editBoxWidth = 280,
@@ -161,7 +163,7 @@ local function CreateCard(parent, addon, anchor)
     local hint = card:CreateFontString(nil, "OVERLAY")
     hint:SetFont(LuckyUI.BODY_FONT, 11)
     hint:SetPoint("RIGHT", -12, 0)
-    hint:SetText("|A:chatframe-button-copy:14:14|a " .. LuckyUI.WC.goldAccent .. "Get link" .. LuckyUI.WC.reset)
+    hint:SetText("|A:chatframe-button-copy:14:14|a " .. LuckyUI.WC.goldAccent .. S.getLink .. LuckyUI.WC.reset)
 
     card:SetScript("OnEnter", function(self)
         self:SetBackdropBorderColor(C.goldAccent[1], C.goldAccent[2], C.goldAccent[3])
@@ -221,7 +223,7 @@ local function CreateIconButton(parent, entry, index)
         GameTooltip:AddLine(entry.name, C.goldPrimary[1], C.goldPrimary[2], C.goldPrimary[3])
         GameTooltip:AddLine(entry.desc, 1, 1, 1, true)
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Click for the link", 0.6, 0.6, 0.6)
+        GameTooltip:AddLine(S.clickForLink, 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
     btn:SetScript("OnLeave", function(self)
