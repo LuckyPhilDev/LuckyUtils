@@ -20,6 +20,7 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 - **LuckyItem** — load item and spell data reliably, with a callback that only fires once the name, icon and link have actually arrived from the server. Results are cached for the session, with a batch helper for flicker-free list rendering.
 - **LuckyMinimap** — draggable minimap buttons with saved position and visibility state, plus one-call registration in Blizzard's AddOn Compartment, no extra library required.
 - **LuckyBugs** — watches for errors in any Lucky Phil addon and offers to walk you through reporting them on the Discord, with a copy-ready report.
+- **LuckyStrings** — seals a table of user-facing strings so a mistyped key shows up on screen as a red placeholder naming the key, instead of a blank label.
 - **LuckyLog** — gated debug loggers that stay silent until an addon's debug flag is on.
 - **LuckyDeps** — optional dependency checks with version validation.
 - **LuckySound** — helpers for addon sound files and built-in WoW sound kit entries.
@@ -52,7 +53,7 @@ Libs\LuckysUtils\embeds.xml
 YourFirstFile.lua
 ```
 
-Every copy registers `LuckysUtils-1.0` with LibStub and only the newest copy loaded runs; it publishes the same globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBugs`, plus `LuckyMedia(fileName)` for paths into the library Media folder), available once the library has loaded, whichever addon carried it. To see which copy won in-game: `/dump LibStub.minors["LuckysUtils-1.0"]`.
+Every copy registers `LuckysUtils-1.0` with LibStub and only the newest copy loaded runs; it publishes the same globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyStrings`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBugs`, plus `LuckyMedia(fileName)` for paths into the library Media folder), available once the library has loaded, whichever addon carried it. To see which copy won in-game: `/dump LibStub.minors["LuckysUtils-1.0"]`.
 
 ---
 
@@ -75,6 +76,24 @@ local cost = LuckyUtils.FormatMoney(123456)
 -- Run once per burst of calls, after the delay
 local refresh = LuckyUtils.Debounced(0.25, RebuildList)
 ```
+
+---
+
+### LuckyStrings
+
+A plain string table returns nil for a mistyped key, which reaches `SetText` as a blank label or a hard error frames later. Sealing swaps that for a red placeholder naming the exact key, so the typo shows in the first screenshot.
+
+```lua
+MyAddon.Strings = LuckyStrings.New("MyAddon.Strings", {
+    minimap = { drag = "Drag: Move button" },
+})
+
+local S = MyAddon.Strings.minimap
+S.drag   --> "Drag: Move button"
+S.dragg  --> "|cffff0000[MyAddon.Strings.minimap.dragg]|r"
+```
+
+Nested tables are sealed too, and the table is sealed in place, so `pairs` and `ipairs` still work.
 
 ---
 
