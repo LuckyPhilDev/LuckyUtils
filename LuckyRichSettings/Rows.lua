@@ -392,19 +392,20 @@ function RichGroup:MultiSelect(opts)
 end
 
 -- ─── Select (single choice from a fixed list) ────────────────────────────────
--- MultiSelect's sibling for a setting that holds one value: the same row shape,
--- radio buttons instead of check boxes. It is on the modern dropdown rather
--- than MultiSelect's legacy one, whose side flanges spill well past the width
--- it is given and crowd the row label. `value` may be a plain key or a zero-arg
--- function, which is re-read every time the panel opens.
+-- MultiSelect's sibling for a setting that holds one value: radio buttons
+-- instead of check boxes, on the modern dropdown rather than MultiSelect's
+-- legacy one. It takes the two-line shape Slider uses, label above the control,
+-- because option text long enough to be worth reading leaves no room for a
+-- label beside it once the About rail has its share of the width. `value` may
+-- be a plain key or a zero-arg function, re-read every time the panel opens.
 
 function RichGroup:Select(opts)
-    local row, hl = makeRow(self, opts, 32)
+    local row, hl = makeRow(self, opts, 48)
     local indent = indentForOpts(opts)
 
     local label = row:CreateFontString(nil, "OVERLAY")
     label:SetFont(R_FONT, 12, "")
-    label:SetPoint("LEFT", indent, 0)
+    label:SetPoint("TOPLEFT", indent, -4)
     label:SetTextColor(R.text[1], R.text[2], R.text[3])
     label:SetText(opts.label)
 
@@ -413,8 +414,8 @@ function RichGroup:Select(opts)
     end
 
     local dd = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
-    dd:SetPoint("RIGHT", -14, 0)
-    dd:SetWidth(opts.width or 190)
+    dd:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -4)
+    dd:SetWidth(opts.width or 220)
 
     local function labelFor(key)
         for _, o in ipairs(opts.options) do
