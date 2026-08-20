@@ -413,8 +413,10 @@ function RichGroup:Select(opts)
         makeNewBadge(row, label)
     end
 
+    -- Right-aligned on the line below the label, sharing an edge with the
+    -- values on Label rows. The 22 clears the row's top pad and the label line.
     local dd = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
-    dd:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -4)
+    dd:SetPoint("TOPRIGHT", row, "TOPRIGHT", -14, -22)
     dd:SetWidth(opts.width or 220)
 
     local function labelFor(key)
