@@ -98,13 +98,16 @@ local function refreshLiveValues(builder)
     end
 end
 
+-- The About rail keeps whatever was hovered last rather than snapping back to the
+-- top of the group. A rail that resets on leave cannot be reached: its own
+-- Enable and Reload button disappears the moment the cursor sets off towards it.
+-- Switching group still resets it, which is where the default belongs.
 local function attachHover(setting, group, extraFrames)
     local function onEnter()
         group.panel:UpdateAbout(setting)
         if setting.rowHover then setting.rowHover:Show() end
     end
     local function onLeave()
-        group.panel:UpdateAbout(nil)
         if setting.rowHover then setting.rowHover:Hide() end
     end
     setting.row:SetScript("OnEnter", onEnter)
@@ -842,7 +845,6 @@ function RichGroup:Card(opts)
     end)
     row:SetScript("OnLeave", function()
         hl:Hide()
-        panel:UpdateAbout(nil)
     end)
     row:SetScript("OnClick", function()
         panel:SetActiveGroup(sourceGroup)
