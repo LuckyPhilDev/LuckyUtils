@@ -395,30 +395,39 @@ end
 -- ─── Select (single choice from a fixed list) ────────────────────────────────
 -- MultiSelect's sibling for a setting that holds one value: radio buttons
 -- instead of check boxes, on the modern dropdown rather than MultiSelect's
--- legacy one. It takes the two-line shape Slider uses, label above the control,
--- because option text long enough to be worth reading leaves no room for a
--- label beside it once the About rail has its share of the width. `value` may
--- be a plain key or a zero-arg function, re-read every time the panel opens.
+-- legacy one. `value` may be a plain key or a zero-arg function, re-read every
+-- time the panel opens.
+--
+-- The dropdown sits beside the label, as MultiSelect's does. Pass
+-- `newLine = true` for the two-line shape Slider uses, label above the control,
+-- which option text long enough to be worth reading needs once the About rail
+-- has taken its share of the width.
 
 function RichGroup:Select(opts)
-    local row, hl = makeRow(self, opts, 48)
+    local row, hl = makeRow(self, opts, opts.newLine and 48 or 32)
     local indent = indentForOpts(opts)
 
     local label = row:CreateFontString(nil, "OVERLAY")
     label:SetFont(R_FONT, 12, "")
-    label:SetPoint("TOPLEFT", indent, -4)
     label:SetTextColor(R.text[1], R.text[2], R.text[3])
     label:SetText(opts.label)
+
+    local dd = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
+    dd:SetWidth(opts.width or 220)
+
+    if opts.newLine then
+        -- Right-aligned on the line below the label, sharing an edge with the
+        -- values on Label rows. The 22 clears the row's top pad and the label line.
+        label:SetPoint("TOPLEFT", indent, -4)
+        dd:SetPoint("TOPRIGHT", row, "TOPRIGHT", -14, -22)
+    else
+        label:SetPoint("LEFT", indent, 0)
+        dd:SetPoint("RIGHT", -14, 0)
+    end
 
     if isVersionRecent(self.panel, opts.since) then
         makeNewBadge(row, label)
     end
-
-    -- Right-aligned on the line below the label, sharing an edge with the
-    -- values on Label rows. The 22 clears the row's top pad and the label line.
-    local dd = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
-    dd:SetPoint("TOPRIGHT", row, "TOPRIGHT", -14, -22)
-    dd:SetWidth(opts.width or 220)
 
     local function labelFor(key)
         for _, o in ipairs(opts.options) do

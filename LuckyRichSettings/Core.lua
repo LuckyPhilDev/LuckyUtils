@@ -15,7 +15,8 @@
 --           g:Slider{ label = "...", min = 1, max = 10, value = ..., onChanged = ... }
 --           g:Select{ label = "...", options = {{ key = "a", label = "A" }},
 --                     value = function() return db.pick end,
---                     onSelect = function(key) db.pick = key end }
+--                     onSelect = function(key) db.pick = key end,
+--                     newLine = true }  -- dropdown below the label, not beside it
 --           g:Button{ label = "Configure…", parent = "Some Toggle", onClick = ... }
 --       end)
 --   end)
