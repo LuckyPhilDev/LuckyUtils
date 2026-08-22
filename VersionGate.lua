@@ -9,7 +9,7 @@
 -- Bump MINOR on every release that changes any file in this library.
 -- A breaking API change goes in a new "LuckysUtils-2.0" major instead.
 
-local MAJOR, MINOR = "LuckysUtils-1.0", 6
+local MAJOR, MINOR = "LuckysUtils-1.0", 7
 
 -- Folder this copy loads from: the host addon when embedded, Luckys_Utils when
 -- standalone. Nil under a plain-Lua test harness, hence the fallback.
@@ -40,6 +40,13 @@ local mediaRoot = (host == "Luckys_Utils")
 
 function LuckyMedia(fileName)
     return mediaRoot .. fileName
+end
+
+-- Full path to one of the shared icons in Media\icons, named without its
+-- extension. The art is white, so whatever draws it picks the colour;
+-- LuckyUI.CreateIconButton tints it gold unless told otherwise.
+function LuckyIcon(name)
+    return mediaRoot .. "icons\\" .. name .. ".tga"
 end
 
 -- Upgrade migrations, run before the newer copy's module files load.

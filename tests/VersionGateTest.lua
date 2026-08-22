@@ -1,4 +1,4 @@
--- luacheck: globals LibStub LuckysUtilsSkipLoad LuckysUtilsHosts LuckyMedia LuckyUtils
+-- luacheck: globals LibStub LuckysUtilsSkipLoad LuckysUtilsHosts LuckyMedia LuckyIcon LuckyUtils
 
 -- Two copies of the library loading in one session: LibStub must let exactly
 -- one copy's files run, whichever registers the highest minor first, and the
@@ -8,6 +8,7 @@ LibStub = nil
 LuckysUtilsSkipLoad = nil
 LuckysUtilsHosts = nil
 LuckyMedia = nil
+LuckyIcon = nil
 LuckyUtils = nil
 
 -- First copy loads: registers and runs. Loaded via dofile, so the host
@@ -23,6 +24,8 @@ local firstFormatMoney = LuckyUtils.FormatMoney
 -- The standalone copy resolves media against its own folder.
 assert(LuckyMedia("x.tga") == "Interface\\AddOns\\Luckys_Utils\\Media\\x.tga",
     "standalone media path should point at the Luckys_Utils folder")
+assert(LuckyIcon("check") == "Interface\\AddOns\\Luckys_Utils\\Media\\icons\\check.tga",
+    "a shared icon resolves by name, under Media\\icons")
 
 -- Second copy with the same minor loads: must be gated off entirely.
 dofile("LibStub.lua")
@@ -57,6 +60,8 @@ assert(select(2, LibStub("LuckysUtils-1.0")) == registeredMinor + 1,
     "minor should now be the newer copy's")
 assert(LuckyMedia("x.tga") == "Interface\\AddOns\\SomeHost\\Libs\\LuckysUtils\\Media\\x.tga",
     "embedded media path should point inside the host addon")
+assert(LuckyIcon("check") == "Interface\\AddOns\\SomeHost\\Libs\\LuckysUtils\\Media\\icons\\check.tga",
+    "shared icons follow the host addon too")
 
 -- Every copy, winner or loser, records its host for the standalone check.
 local seen = {}

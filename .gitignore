@@ -1,3 +1,6 @@
 
 # local AI-tool pointer (points outside repo; do not commit)
 AGENTS.md
+
+# local icon bake script (regenerates Media/icons from SVG sources)
+tools/
