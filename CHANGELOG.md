@@ -1,4 +1,4 @@
-## [1.13.0] - 2026-08-22
+## [1.13.0] - 2026-08-23
 
 ### Added
 - `LuckyIcon(name)` returns the full path to one of the shared icons now shipped in `Media\icons`, resolving against the winning copy the same way `LuckyMedia` does. The set is white line art so the drawing code picks the colour: `check`, `crosshair`, `crown`, `dice`, `plus`, `search`, `settings`, `sparkle`, `target`, `triangle-alert`, `x`.

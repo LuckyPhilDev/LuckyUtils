@@ -12,7 +12,7 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 
 ## What's Included
 
-- **LuckyUI** — dark/gold colour palette and frame builders: styled panels, headers, buttons, checkboxes, dividers, search inputs, and drag-to-move with position persistence.
+- **LuckyUI** — dark/gold colour palette and frame builders: styled panels, headers, buttons, checkboxes, dividers, search inputs, and drag-to-move with position persistence. Ships a set of white line icons any addon can draw and tint.
 - **LuckySettings** — fluent builder for Interface Options panels: toggles, selectors, sliders, and section headings.
 - **LuckyRichSettings** — settings panel with grouped navigation, hover descriptions, status badges, single-choice and check-list dropdowns, inline notice banners, options that can be marked unavailable, and an optional About panel with screenshots, notes, and "What's New" highlights.
 - **LuckyRoster** — shared, account-wide character roster (names, classes, professions) so dependent addons see one consistent list.
@@ -53,7 +53,7 @@ Libs\LuckysUtils\embeds.xml
 YourFirstFile.lua
 ```
 
-Every copy registers `LuckysUtils-1.0` with LibStub and only the newest copy loaded runs; it publishes the same globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyStrings`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBugs`, plus `LuckyMedia(fileName)` for paths into the library Media folder), available once the library has loaded, whichever addon carried it. To see which copy won in-game: `/dump LibStub.minors["LuckysUtils-1.0"]`.
+Every copy registers `LuckysUtils-1.0` with LibStub and only the newest copy loaded runs; it publishes the same globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyStrings`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBugs`, plus `LuckyMedia(fileName)` and `LuckyIcon(name)` for paths into the library Media folder), available once the library has loaded, whichever addon carried it. To see which copy won in-game: `/dump LibStub.minors["LuckysUtils-1.0"]`.
 
 ---
 
@@ -196,6 +196,15 @@ local icon = LuckyUI.CreateIconButton(parent, {
 })
 icon:SetScript("OnClick", ToggleMinimapButton)
 -- Adds icon:SetIconColor(r, g, b, a) and icon:SetIconDesaturated(bool)
+
+-- `icon` also takes the bare name of one of the shared icons, which the library
+-- resolves and the button tints. Anything with a path separator in it is left
+-- alone as your own texture.
+local tick = LuckyUI.CreateIconButton(parent, { icon = "check", size = 18 })
+
+-- The shared set, as white line art on transparent, tinted by whatever draws it:
+-- check, crosshair, crown, dice, plus, search, settings, sparkle, target,
+-- triangle-alert, x. LuckyIcon(name) gives the full texture path for one.
 
 -- Drag-to-move with SavedVariables persistence
 LuckyUI.EnableDrag(myFrame, {
