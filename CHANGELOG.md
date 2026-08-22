@@ -1,3 +1,8 @@
+## [1.12.1] - 2026-08-22
+
+### Added
+- `RichGroup:Select(opts)` takes `newLine`. It defaults to false, putting the dropdown beside its label the way `MultiSelect` does; pass true for the previous two-line shape, label above the dropdown, which long option text still needs.
+
 ## [1.12.0] - 2026-08-20
 
 ### Added

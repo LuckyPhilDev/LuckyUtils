@@ -9,7 +9,7 @@
 -- Bump MINOR on every release that changes any file in this library.
 -- A breaking API change goes in a new "LuckysUtils-2.0" major instead.
 
-local MAJOR, MINOR = "LuckysUtils-1.0", 4
+local MAJOR, MINOR = "LuckysUtils-1.0", 5
 
 -- Folder this copy loads from: the host addon when embedded, Luckys_Utils when
 -- standalone. Nil under a plain-Lua test harness, hence the fallback.
