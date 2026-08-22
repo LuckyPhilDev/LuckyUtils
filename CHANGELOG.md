@@ -1,3 +1,9 @@
+## [1.13.0] - 2026-08-22
+
+### Added
+- `LuckyIcon(name)` returns the full path to one of the shared icons now shipped in `Media\icons`, resolving against the winning copy the same way `LuckyMedia` does. The set is white line art so the drawing code picks the colour: `check`, `crosshair`, `crown`, `dice`, `plus`, `search`, `settings`, `sparkle`, `target`, `triangle-alert`, `x`.
+- `LuckyUI.CreateIconButton` accepts a shared icon's bare name in `opts.icon`. Anything containing a path separator is still treated as the consumer's own texture, so existing callers are unaffected.
+
 ## [1.12.1] - 2026-08-22
 
 ### Added

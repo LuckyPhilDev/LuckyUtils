@@ -190,7 +190,8 @@ end
 --- Create a small icon button: gold tinted art, additive hover, dimmed when disabled.
 --
 -- opts fields:
---   icon     (string)  Texture path
+--   icon     (string)  A shared icon's name (see Media\icons), or a full
+--                      texture path for art of the consumer's own
 --   size     (number)  Square size, default 20
 --   tooltip  (string|function)  Text, or fn(GameTooltip, button) for a live one
 --   anchor   (string)  Tooltip anchor, default "ANCHOR_RIGHT"
@@ -202,11 +203,14 @@ end
 -- by state, and SetIconDesaturated(bool).
 function LuckyUI.CreateIconButton(parent, opts)
     local size = opts.size or 20
+    -- A bare name is one of the shared icons; anything with a path separator is
+    -- the caller's own texture.
+    local icon = opts.icon:find("\\", 1, true) and opts.icon or LuckyIcon(opts.icon)
     local btn = CreateFrame("Button", nil, parent)
     btn:SetSize(size, size)
-    btn:SetNormalTexture(opts.icon)
-    btn:SetHighlightTexture(opts.icon, "ADD")
-    btn:SetDisabledTexture(opts.icon)
+    btn:SetNormalTexture(icon)
+    btn:SetHighlightTexture(icon, "ADD")
+    btn:SetDisabledTexture(icon)
 
     local textures = { btn:GetNormalTexture(), btn:GetHighlightTexture(), btn:GetDisabledTexture() }
     if opts.texCoord then
