@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Fixed
+- The About rail keeps the setting you last hovered rather than resetting to the top of the group when the cursor leaves the row. Its own Enable and Reload button could not be reached before, because setting off towards it dismissed the panel holding it.
+
 ## [1.12.1] - 2026-08-22
 
 ### Added
