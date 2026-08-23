@@ -1,7 +1,7 @@
 ## Interface: 120100
 ## Title: Lucky's Utils
 ## Notes: Shared Library for Lucky Phil's Addons
-## Version: 1.13.0
+## Version: 1.13.1
 ## Author: Lucky Phil
 ## SavedVariables: LuckySettingsDB, LuckyRosterDB
 ## X-Curse-Project-ID: 1512341

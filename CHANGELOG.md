@@ -1,4 +1,4 @@
-## [Unreleased]
+## [1.13.1] - 2026-08-23
 
 ### Added
 - Two more shared icons in `Media\icons`: `filter` and `layers`.
