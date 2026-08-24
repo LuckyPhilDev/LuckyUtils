@@ -1,7 +1,7 @@
 ## [Unreleased]
 
 ### Added
-- `RichGroup:ButtonRow(opts)` puts sibling actions side by side on one row instead of stacking a full-width button each. Every button takes `label`, an optional shared-icon name in `icon`, `desc` and `onClick`, keeps its own About entry, and is sized to the widest label so the row stays even.
+- `RichGroup:ButtonRow(opts)` puts sibling actions side by side on one row instead of stacking a full-width button each. Every button takes `label`, an optional shared-icon name in `icon`, `desc` and `onClick`, and keeps its own About entry. They are drawn borderless, matching `LuckyUI.CreateIconButton`: gold art and label with no plate, lit on hover by the icon added over itself.
 - Three more shared icons in `Media\icons`: `copy`, `pencil` and `trash`.
 
 ## [1.13.1] - 2026-08-23

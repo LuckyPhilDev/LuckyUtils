@@ -523,7 +523,7 @@ function RichGroup:Button(opts)
     return self
 end
 
--- ─── ButtonRow (sibling actions side by side on one row) ─────────────────────
+-- ─── ButtonRow (sibling actions side by side on one row) ─────────────────
 -- Actions on the same subject, new/rename/duplicate/delete for a profile say,
 -- read as one toolbar rather than as a stack of full-width buttons. Each button
 -- keeps its own About entry, so hovering one explains that action alone.
@@ -533,40 +533,73 @@ end
 --     } })
 --
 -- `icon` is the bare name of one of the shared icons; leave it out for a plain
--- text button. Every button takes the width of the widest label so the row
--- stays even however the labels are worded.
+-- text button. The buttons are borderless, the same look the icon buttons across
+-- the addons have: gold art and label with no plate behind them, lighting up on
+-- hover with the icon added over itself. Each is only as wide as it reads, since
+-- with no edges to line up an even width would just make the gaps look uneven.
 
-local ICON_SIZE = 14
-local ICON_GAP  = 5
-local ICON_PAD  = 46  -- icon, its gap, and breathing room either side of the pair
-local TEXT_PAD  = 20
+local ICON_SIZE  = 14
+local ICON_GAP   = 6   -- icon to its own label
+local BUTTON_H   = 20
+local GLOW_ALPHA = 0.35
 
 function RichGroup:ButtonRow(opts)
-    local row, hl = makeRow(self, opts, 34)
-    local indent = indentForOpts(opts)
-    local gap = opts.gap or 6
+    local rowHeight = 32
+    local row, hl = makeRow(self, opts, rowHeight)
+    local gap = opts.gap or 20  -- between buttons, which is all that separates them
 
-    local buttons, icons, blocks, firstSetting, widest = {}, {}, {}, nil, 0
+    local x, firstSetting = indentForOpts(opts), nil
 
-    for i, spec in ipairs(opts.buttons) do
-        local btn = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        btn:SetHeight(24)
-        btn:SetText(spec.label)
+    for _, spec in ipairs(opts.buttons) do
+        local btn = CreateFrame("Button", nil, row)
+        btn:SetHeight(BUTTON_H)
         btn:SetScript("OnClick", function() if spec.onClick then spec.onClick() end end)
-        buttons[i] = btn
 
-        local text = btn:GetFontString()
-        local textWidth = math.ceil(text:GetStringWidth())
+        local text = btn:CreateFontString(nil, "OVERLAY")
+        text:SetFont(R_FONT, 12, "")
+        text:SetText(spec.label)
+        text:SetPoint("RIGHT")
+
+        local width = math.ceil(text:GetStringWidth())
+        local icon, glow
         if spec.icon then
-            icons[i] = btn:CreateTexture(nil, "ARTWORK")
-            icons[i]:SetSize(ICON_SIZE, ICON_SIZE)
-            icons[i]:SetTexture(LuckyIcon(spec.icon))
-            icons[i]:SetVertexColor(R.accentLight[1], R.accentLight[2], R.accentLight[3])
-            text:ClearAllPoints()
-            text:SetPoint("LEFT", icons[i], "RIGHT", ICON_GAP, 0)
-            blocks[i] = ICON_SIZE + ICON_GAP + textWidth
+            local art = LuckyIcon(spec.icon)
+            icon = btn:CreateTexture(nil, "ARTWORK")
+            icon:SetSize(ICON_SIZE, ICON_SIZE)
+            icon:SetTexture(art)
+            icon:SetPoint("LEFT")
+
+            -- Hover is the icon added over itself rather than anything drawn
+            -- behind it, which is what keeps the button borderless.
+            glow = btn:CreateTexture(nil, "OVERLAY")
+            glow:SetAllPoints(icon)
+            glow:SetTexture(art)
+            glow:SetBlendMode("ADD")
+            glow:SetAlpha(GLOW_ALPHA)
+            glow:Hide()
+
+            width = width + ICON_SIZE + ICON_GAP
         end
-        widest = math.max(widest, textWidth + (spec.icon and ICON_PAD or TEXT_PAD))
+
+        btn:SetWidth(width)
+        btn:SetPoint("LEFT", x, 0)
+        -- The gaps are dead space that would otherwise hand the mouse back to the
+        -- row, so each button claims its half and the full height of the row.
+        btn:SetHitRectInsets(-gap / 2, -gap / 2, -(rowHeight - BUTTON_H) / 2, -(rowHeight - BUTTON_H) / 2)
+        x = x + width + gap
+
+        local function paint(lit)
+            local c = lit and R.accentLight or R.accent
+            text:SetTextColor(c[1], c[2], c[3])
+            if icon then
+                icon:SetVertexColor(c[1], c[2], c[3])
+                glow:SetVertexColor(c[1], c[2], c[3])
+                glow:SetShown(lit)
+            end
+        end
+        paint(false)
+        btn:SetScript("OnEnter", function() paint(true) end)
+        btn:SetScript("OnLeave", function() paint(false) end)
 
         local setting = {
             type     = "Button",
@@ -578,7 +611,7 @@ function RichGroup:ButtonRow(opts)
             row      = row,
             rowHover = hl,
             button   = btn,
-            icon     = icons[i],
+            icon     = icon,
         }
         table.insert(self.settings, setting)
         self.byLabel[spec.label] = setting
@@ -586,19 +619,8 @@ function RichGroup:ButtonRow(opts)
         firstSetting = firstSetting or setting
     end
 
-    -- Sized in a second pass, because the widest label is only known once every
-    -- button has been made. An icon and its label centre together as one block,
-    -- so a short label doesn't leave its icon stranded at the button's edge.
-    for i, btn in ipairs(buttons) do
-        btn:SetWidth(widest)
-        btn:SetPoint("LEFT", indent + (i - 1) * (widest + gap), 0)
-        if icons[i] then
-            icons[i]:SetPoint("LEFT", (widest - blocks[i]) / 2, 0)
-        end
-    end
-
     -- Every button just re-pointed the row's own hover at itself, so the last one
-    -- would otherwise own the gaps between them.
+    -- would otherwise own whatever is left of the row.
     attachHover(firstSetting, self)
     return self
 end

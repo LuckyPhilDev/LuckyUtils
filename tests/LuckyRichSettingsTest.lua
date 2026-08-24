@@ -205,7 +205,7 @@ select.refreshSelect()
 assert(select.dropdown.text == "Wishlist and loot browser", "a value changed elsewhere is re-read on open")
 
 -------------------------------------------------------------------------------
--- ButtonRow puts its buttons side by side, every one at the widest label's width.
+-- ButtonRow puts its buttons side by side, each only as wide as it reads.
 -------------------------------------------------------------------------------
 local clicked
 local actions = panel:Group("Actions")
@@ -216,24 +216,19 @@ actions:ButtonRow({ buttons = {
 } })
 
 local new, delete = findSetting(actions, "New"), findSetting(actions, "Delete")
-assert(new.row == delete.row, "the buttons share one row")
-assert(new.button.width == delete.button.width, "and are sized to the widest label")
+local cancel = findSetting(actions, "Cancel")
+assert(new.row == delete.row and new.row == cancel.row, "the buttons share one row")
+
+-- The stub measures every label at 40, so an icon button is 40 + 14 + 6 wide.
+assert(new.button.width == 60, "an icon button fits its label and its icon")
+assert(cancel.button.width == 40, "a button without an icon is only its label wide")
+
 -- SetPoint("LEFT", x, y) anchors to the parent, so the stub records the offset as `rel`.
-assert(delete.button.points.LEFT.rel == 14 + new.button.width + 6,
-    "the second button clears the first plus the gap")
-assert(new.row.points.TOPLEFT, "the row itself still flows down the group")
+assert(new.button.points.LEFT.rel == 14, "the first button starts at the row indent")
+assert(delete.button.points.LEFT.rel == 14 + 60 + 20, "the next clears the first plus the gap")
+assert(cancel.button.points.LEFT.rel == 14 + 60 + 20 + 60 + 20, "and so does the one after it")
 
 delete.button.scripts.OnClick()
 assert(clicked == "Delete", "each button runs its own onClick")
-
--- The stub measures every label at 40, so an icon button is 40 + 46 wide and the
--- icon-plus-label block inside it is 14 + 5 + 40.
-assert(new.button.width == 86, "an icon button fits its label plus the icon and padding")
-assert(new.icon.points.LEFT.rel == (86 - 59) / 2,
-    "the icon and its label centre in the button as one block")
-
-local cancel = findSetting(actions, "Cancel")
-assert(cancel.icon == nil, "a button can go without an icon")
-assert(cancel.button.width == 86, "and still shares the row's width")
 
 print("LuckyRichSettings tests passed")
