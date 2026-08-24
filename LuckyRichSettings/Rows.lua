@@ -523,6 +523,86 @@ function RichGroup:Button(opts)
     return self
 end
 
+-- ─── ButtonRow (sibling actions side by side on one row) ─────────────────────
+-- Actions on the same subject, new/rename/duplicate/delete for a profile say,
+-- read as one toolbar rather than as a stack of full-width buttons. Each button
+-- keeps its own About entry, so hovering one explains that action alone.
+--
+--     group:ButtonRow({ buttons = {
+--         { label = "New", icon = "plus", desc = "...", onClick = fn },
+--     } })
+--
+-- `icon` is the bare name of one of the shared icons; leave it out for a plain
+-- text button. Every button takes the width of the widest label so the row
+-- stays even however the labels are worded.
+
+local ICON_SIZE = 14
+local ICON_GAP  = 5
+local ICON_PAD  = 46  -- icon, its gap, and breathing room either side of the pair
+local TEXT_PAD  = 20
+
+function RichGroup:ButtonRow(opts)
+    local row, hl = makeRow(self, opts, 34)
+    local indent = indentForOpts(opts)
+    local gap = opts.gap or 6
+
+    local buttons, icons, blocks, firstSetting, widest = {}, {}, {}, nil, 0
+
+    for i, spec in ipairs(opts.buttons) do
+        local btn = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+        btn:SetHeight(24)
+        btn:SetText(spec.label)
+        btn:SetScript("OnClick", function() if spec.onClick then spec.onClick() end end)
+        buttons[i] = btn
+
+        local text = btn:GetFontString()
+        local textWidth = math.ceil(text:GetStringWidth())
+        if spec.icon then
+            icons[i] = btn:CreateTexture(nil, "ARTWORK")
+            icons[i]:SetSize(ICON_SIZE, ICON_SIZE)
+            icons[i]:SetTexture(LuckyIcon(spec.icon))
+            icons[i]:SetVertexColor(R.accentLight[1], R.accentLight[2], R.accentLight[3])
+            text:ClearAllPoints()
+            text:SetPoint("LEFT", icons[i], "RIGHT", ICON_GAP, 0)
+            blocks[i] = ICON_SIZE + ICON_GAP + textWidth
+        end
+        widest = math.max(widest, textWidth + (spec.icon and ICON_PAD or TEXT_PAD))
+
+        local setting = {
+            type     = "Button",
+            label    = spec.label,
+            desc     = spec.desc,
+            tooltip  = spec.tooltip,
+            warning  = spec.warning,
+            since    = spec.since,
+            row      = row,
+            rowHover = hl,
+            button   = btn,
+            icon     = icons[i],
+        }
+        table.insert(self.settings, setting)
+        self.byLabel[spec.label] = setting
+        attachHover(setting, self, { btn })
+        firstSetting = firstSetting or setting
+    end
+
+    -- Sized in a second pass, because the widest label is only known once every
+    -- button has been made. An icon and its label centre together as one block,
+    -- so a short label doesn't leave its icon stranded at the button's edge.
+    for i, btn in ipairs(buttons) do
+        btn:SetWidth(widest)
+        btn:SetPoint("LEFT", indent + (i - 1) * (widest + gap), 0)
+        if icons[i] then
+            icons[i]:SetPoint("LEFT", (widest - blocks[i]) / 2, 0)
+        end
+    end
+
+    -- Every button just re-pointed the row's own hover at itself, so the last one
+    -- would otherwise own the gaps between them.
+    attachHover(firstSetting, self)
+    return self
+end
+
 -- ─── Label (read-only key-value info row) ─────────────────────────────────────
 
 function RichGroup:Label(opts)

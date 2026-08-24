@@ -38,10 +38,20 @@ local function newFrame(kind, parent)
         SetWidth         = function(self, w) self.width = w end,
         GetWidth         = function(self) return self.width end,
         SetSize          = function(self, w, h) self.width, self.height = w, h end,
-        CreateTexture    = function() return stub() end,
+        CreateTexture    = function()
+            return stub({
+                points   = {},
+                SetPoint = function(self, point, rel) self.points[point] = { rel = rel } end,
+            })
+        end,
         CreateFontString = function() return newText() end,
         HookScript       = function(self, event, fn) self.scripts[event] = fn end,
+        SetScript        = function(self, event, fn) self.scripts[event] = fn end,
     })
+    if kind == "Button" then
+        frame.fontString   = newText()
+        frame.GetFontString = function(self) return self.fontString end
+    end
     if kind == "ScrollFrame" then
         frame.ScrollBar = stub({ SetShown = function(self, shown) self.shown = shown end })
     elseif kind == "DropdownButton" then
@@ -193,5 +203,37 @@ assert(select.dropdown.text == "Wishlist only", "and the row follows the new val
 minimapClick = "both"
 select.refreshSelect()
 assert(select.dropdown.text == "Wishlist and loot browser", "a value changed elsewhere is re-read on open")
+
+-------------------------------------------------------------------------------
+-- ButtonRow puts its buttons side by side, every one at the widest label's width.
+-------------------------------------------------------------------------------
+local clicked
+local actions = panel:Group("Actions")
+actions:ButtonRow({ buttons = {
+    { label = "New",    icon = "plus",  desc = "Start an empty one" },
+    { label = "Delete", icon = "trash", onClick = function() clicked = "Delete" end },
+    { label = "Cancel" },
+} })
+
+local new, delete = findSetting(actions, "New"), findSetting(actions, "Delete")
+assert(new.row == delete.row, "the buttons share one row")
+assert(new.button.width == delete.button.width, "and are sized to the widest label")
+-- SetPoint("LEFT", x, y) anchors to the parent, so the stub records the offset as `rel`.
+assert(delete.button.points.LEFT.rel == 14 + new.button.width + 6,
+    "the second button clears the first plus the gap")
+assert(new.row.points.TOPLEFT, "the row itself still flows down the group")
+
+delete.button.scripts.OnClick()
+assert(clicked == "Delete", "each button runs its own onClick")
+
+-- The stub measures every label at 40, so an icon button is 40 + 46 wide and the
+-- icon-plus-label block inside it is 14 + 5 + 40.
+assert(new.button.width == 86, "an icon button fits its label plus the icon and padding")
+assert(new.icon.points.LEFT.rel == (86 - 59) / 2,
+    "the icon and its label centre in the button as one block")
+
+local cancel = findSetting(actions, "Cancel")
+assert(cancel.icon == nil, "a button can go without an icon")
+assert(cancel.button.width == 86, "and still shares the row's width")
 
 print("LuckyRichSettings tests passed")
