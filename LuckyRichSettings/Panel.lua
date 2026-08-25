@@ -13,6 +13,7 @@ local rEdgeRule         = Rich.EdgeRule
 local RichBuilder       = Rich.RichBuilder
 local RichGroup         = Rich.RichGroup
 local isVersionRecent   = Rich.isVersionRecent
+local whatsNewFloor     = Rich.whatsNewFloor
 local firstRealSetting  = Rich.firstRealSetting
 local buildAbout        = Rich.buildAbout
 local aboutShow         = Rich.aboutShow
@@ -432,11 +433,18 @@ function LuckySettings:NewRichPanel(displayName, opts, contents)
         center:SetPoint("BOTTOMRIGHT")
     end
 
+    -- A panel that names neither floor gets one derived from its .toc version,
+    -- so What's New keeps itself current without a constant to remember.
+    local minVersion = opts.minVersion
+    if not minVersion and not opts.recentVersions then
+        minVersion = whatsNewFloor(opts.addonFolder)
+    end
+
     local builder = setmetatable({
         addonFolder    = opts.addonFolder,
         imagesRoot     = opts.imagesRoot,
         recentVersions = opts.recentVersions, -- list of versions whose settings get a NEW badge (legacy)
-        minVersion     = opts.minVersion,     -- min semver; any `since` >= this gets a NEW badge
+        minVersion     = minVersion,          -- min semver; any `since` >= this gets a NEW badge
         canvas         = canvas,
         titleBar       = titleBar,
         nav            = nav,

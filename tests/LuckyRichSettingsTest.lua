@@ -231,4 +231,38 @@ assert(cancel.button.points.LEFT.rel == 14 + 60 + 20 + 60 + 20, "and so does the
 delete.button.scripts.OnClick()
 assert(clicked == "Delete", "each button runs its own onClick")
 
+-- The What's New floor a panel gets when it names none: two minors back from
+-- the .toc version, so a release cannot ship still trumpeting old features.
+local whatsNewFloor = ns.Rich.whatsNewFloor
+
+LuckyPromo = stub()
+
+local function setVersion(version)
+    C_AddOns.GetAddOnMetadata = function(_, key)
+        return key == "Version" and version or nil
+    end
+end
+
+local function floorFor(version)
+    setVersion(version)
+    return whatsNewFloor("Any_Addon")
+end
+
+assert(floorFor("1.24.0") == "1.22.0", "two minors back")
+assert(floorFor("1.23.1") == "1.21.0", "the patch number does not matter")
+assert(floorFor("1.24") == "1.22.0", "a two part version still reads")
+assert(floorFor("2.0.0") == "2.0.0", "a fresh major highlights only itself")
+assert(floorFor("2.1.0") == "2.0.0", "one minor in reaches back to the major")
+assert(floorFor("") == "0.0.0", "an unreadable version shows everything")
+assert(floorFor("nightly") == "0.0.0", "a non-numeric version shows everything")
+assert(whatsNewFloor(nil) == nil, "no addon folder means no derived floor")
+
+setVersion("1.5.0")
+local derived = LuckySettings:NewRichPanel("Derived Addon", { addonFolder = "Any_Addon" })
+assert(derived.minVersion == "1.3.0", "a panel with no minVersion derives one")
+
+local legacy = LuckySettings:NewRichPanel("Legacy Addon",
+    { addonFolder = "Any_Addon", recentVersions = { "1.5.0" } })
+assert(legacy.minVersion == nil, "a recentVersions panel keeps its legacy list")
+
 print("LuckyRichSettings tests passed")
