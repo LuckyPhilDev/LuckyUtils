@@ -116,6 +116,19 @@ local function compareVersions(a, b)
     return 0
 end
 
+-- Default What's New floor when a panel names no minVersion: two minors back
+-- from the addon's own .toc version, so a release cannot ship still trumpeting
+-- features from several cycles ago and nobody has to bump a constant by hand.
+local WHATS_NEW_MINOR_SPAN = 2
+
+local function whatsNewFloor(addonFolder)
+    if not addonFolder then return nil end
+    local version = C_AddOns.GetAddOnMetadata(addonFolder, "Version") or ""
+    local major, minor = version:match("^(%d+)%.(%d+)")
+    if not major then return "0.0.0" end
+    return major .. "." .. math.max(tonumber(minor) - WHATS_NEW_MINOR_SPAN, 0) .. ".0"
+end
+
 local function isVersionRecent(panel, since)
     if not since then return false end
     if panel.minVersion then
@@ -154,4 +167,5 @@ Rich.EdgeRule         = rEdgeRule
 Rich.RichBuilder      = RichBuilder
 Rich.RichGroup        = RichGroup
 Rich.isVersionRecent  = isVersionRecent
+Rich.whatsNewFloor    = whatsNewFloor
 Rich.firstRealSetting = firstRealSetting
