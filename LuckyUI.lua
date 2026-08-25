@@ -52,6 +52,11 @@ LuckyUI.WC = {
 LuckyUI.TITLE_FONT = STANDARD_TEXT_FONT
 LuckyUI.BODY_FONT  = STANDARD_TEXT_FONT
 
+-- Separator glyph for joining label parts. The Cyrillic game font has no
+-- middle dot, so a ruRU client would draw one as an empty box. Callers add
+-- their own spacing around it.
+LuckyUI.DOT = GetLocale() == "ruRU" and "-" or "\194\183"
+
 -- Shared backdrop definition
 LuckyUI.Backdrop = {
     bgFile   = SOLID,
