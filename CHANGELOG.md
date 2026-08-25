@@ -8,6 +8,7 @@
 
 ### Fixed
 - `RichBuilder:Finalize` publishes `whatsNewGroup` before any early return, so a panel that ends up with no What's New floor still hands callers a group. `LuckyPromo:AddToRichGroup(panel.whatsNewGroup, ...)` errored on a nil group otherwise.
+- The floating screenshot preview in `LuckyRichSettings` hides when the cursor leaves the row that opened it, instead of lingering until a row with no screenshot is hovered.
 - `LuckyUI.TITLE_FONT` and `LuckyUI.BODY_FONT` follow `STANDARD_TEXT_FONT` rather than hardcoding `Fonts\FRIZQT__.TTF`, which carries no Cyrillic or CJK glyphs, so ruRU, koKR, zhCN and zhTW clients draw text instead of empty boxes. `LuckySettings` and `LuckyRichSettings` take their font from `LuckyUI.BODY_FONT` for the same reason.
 
 ## [1.13.1] - 2026-08-23
