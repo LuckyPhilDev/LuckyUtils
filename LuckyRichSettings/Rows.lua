@@ -8,11 +8,12 @@ if LuckysUtilsSkipLoad then return end
 local ns = select(2, ...)
 local Rich = ns.Rich
 
-local R               = Rich.R
-local R_FONT          = Rich.Font
-local S               = LuckyUtilsStrings.richSettings
-local RichGroup       = Rich.RichGroup
-local isVersionRecent = Rich.isVersionRecent
+local R                = Rich.R
+local R_FONT           = Rich.Font
+local S                = LuckyUtilsStrings.richSettings
+local RichGroup        = Rich.RichGroup
+local isVersionRecent  = Rich.isVersionRecent
+local hideImagePreview = Rich.hideImagePreview
 
 -- Row state (`checked` on Toggle, `value` on Slider) may be a plain value or a
 -- zero-arg function. Function-valued state is re-read every time the panel is
@@ -101,7 +102,9 @@ end
 -- The About rail keeps whatever was hovered last rather than snapping back to the
 -- top of the group. A rail that resets on leave cannot be reached: its own
 -- Enable and Reload button disappears the moment the cursor sets off towards it.
--- Switching group still resets it, which is where the default belongs.
+-- Switching group still resets it, which is where the default belongs. The
+-- floating screenshot preview is the exception: nothing on it is clickable, so
+-- it goes on leave rather than trailing the cursor around the panel.
 local function attachHover(setting, group, extraFrames)
     local function onEnter()
         group.panel:UpdateAbout(setting)
@@ -109,6 +112,7 @@ local function attachHover(setting, group, extraFrames)
     end
     local function onLeave()
         if setting.rowHover then setting.rowHover:Hide() end
+        hideImagePreview()
     end
     setting.row:SetScript("OnEnter", onEnter)
     setting.row:SetScript("OnLeave", onLeave)
@@ -947,6 +951,7 @@ function RichGroup:Card(opts)
     end)
     row:SetScript("OnLeave", function()
         hl:Hide()
+        hideImagePreview()
     end)
     row:SetScript("OnClick", function()
         panel:SetActiveGroup(sourceGroup)
