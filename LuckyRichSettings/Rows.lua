@@ -843,6 +843,18 @@ function RichGroup:BottomSection(name)
     return self
 end
 
+--- An empty row of the given height in the normal top-down flow, for callers
+--- that draw their own contents. Returns the frame rather than the group.
+---@param height number
+---@return Frame
+function RichGroup:Frame(height)
+    local frame = CreateFrame("Frame", nil, rowParent(self))
+    frame:SetHeight(height)
+    placeRow(self, frame)
+    table.insert(self.settings, { row = frame, isSection = true })
+    return frame
+end
+
 -- ─── Section heading (sub-group within a group) ──────────────────────────────
 
 function RichGroup:Section(name)
