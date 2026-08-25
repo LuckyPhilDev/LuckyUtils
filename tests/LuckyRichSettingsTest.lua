@@ -65,6 +65,7 @@ CreateFrame = function(kind, _, parent) return newFrame(kind, parent) end
 
 LuckyUI = stub({
     Backdrop = {},
+    BODY_FONT = "Fonts/locale-specific.ttf",
     C = { goldIcon = { 1, 1, 1 } },
     CreateIconButton = function(parent) return newFrame("Button", parent) end,
     CreateButton = function(parent) return newFrame("Button", parent) end,
@@ -93,6 +94,10 @@ loadfile("LuckyRichSettings/Core.lua")("Luckys_Utils", ns)
 loadfile("LuckyRichSettings/About.lua")("Luckys_Utils", ns)
 loadfile("LuckyRichSettings/Rows.lua")("Luckys_Utils", ns)
 loadfile("LuckyRichSettings/Panel.lua")("Luckys_Utils", ns)
+
+-- The panel draws in whatever face LuckyUI resolved for the client locale. A
+-- hardcoded roman font here is what left Cyrillic clients reading empty boxes.
+assert(LuckySettings.Rich.Font == LuckyUI.BODY_FONT, "rich settings take the shared locale font")
 
 local devMode = false
 local panel = LuckySettings:NewRichPanel("Test Addon", {

@@ -47,9 +47,10 @@ LuckyUI.WC = {
     reset       = "|r",
 }
 
--- Fonts
-LuckyUI.TITLE_FONT = "Fonts\\FRIZQT__.TTF"
-LuckyUI.BODY_FONT  = "Fonts\\FRIZQT__.TTF"
+-- Fonts. STANDARD_TEXT_FONT is whatever face the client's own locale uses,
+-- so Cyrillic and CJK clients get glyphs instead of empty boxes.
+LuckyUI.TITLE_FONT = STANDARD_TEXT_FONT
+LuckyUI.BODY_FONT  = STANDARD_TEXT_FONT
 
 -- Shared backdrop definition
 LuckyUI.Backdrop = {
