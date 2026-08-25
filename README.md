@@ -169,6 +169,12 @@ print(LuckyUI.WC.goldPrimary .. "MyAddon" .. LuckyUI.WC.reset .. ": hello")
 
 Key palette tokens: `bgDark`, `bgPanel`, `bgInput`, `goldPrimary`, `goldAccent`, `goldMuted`, `textLight`, `textMuted`, `danger`, `info`, `success`, `purple`.
 
+`LuckyUI.DOT` is the separator glyph for joining label parts, a middle dot on every client whose font can draw one and a hyphen on ruRU, which cannot. Add your own spacing around it:
+
+```lua
+local label = name .. " " .. LuckyUI.DOT .. " " .. realm
+```
+
 **Frame helpers:**
 
 ```lua
