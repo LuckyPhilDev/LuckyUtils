@@ -65,7 +65,7 @@ local R = {
     border2     = { 1.0, 0.824, 0.392, 0.15 },
 }
 
-local R_FONT = "Fonts\\FRIZQT__.TTF"
+local R_FONT = LuckyUI.BODY_FONT
 
 local function rFillBg(parent, color, layer)
     local t = parent:CreateTexture(nil, layer or "BACKGROUND")

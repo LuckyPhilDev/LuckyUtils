@@ -47,9 +47,15 @@ LuckyUI.WC = {
     reset       = "|r",
 }
 
--- Fonts
-LuckyUI.TITLE_FONT = "Fonts\\FRIZQT__.TTF"
-LuckyUI.BODY_FONT  = "Fonts\\FRIZQT__.TTF"
+-- Fonts. STANDARD_TEXT_FONT is whatever face the client's own locale uses,
+-- so Cyrillic and CJK clients get glyphs instead of empty boxes.
+LuckyUI.TITLE_FONT = STANDARD_TEXT_FONT
+LuckyUI.BODY_FONT  = STANDARD_TEXT_FONT
+
+-- Separator glyph for joining label parts. The Cyrillic game font has no
+-- middle dot, so a ruRU client would draw one as an empty box. Callers add
+-- their own spacing around it.
+LuckyUI.DOT = GetLocale() == "ruRU" and "-" or "\194\183"
 
 -- Shared backdrop definition
 LuckyUI.Backdrop = {

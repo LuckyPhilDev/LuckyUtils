@@ -244,7 +244,7 @@ function Builder:Selector(opts)
         })
 
         local lbl = btn:CreateFontString(nil, "OVERLAY")
-        lbl:SetFont("Fonts\\FRIZQT__.TTF", 11)
+        lbl:SetFont(LuckyUI.BODY_FONT, 11)
         lbl:SetPoint("CENTER")
         lbl:SetText(choice.label)
         btn.label = lbl

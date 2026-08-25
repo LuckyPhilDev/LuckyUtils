@@ -4,6 +4,11 @@
 - `RichGroup:ButtonRow(opts)` puts sibling actions side by side on one row instead of stacking a full-width button each. Every button takes `label`, an optional shared-icon name in `icon`, `desc` and `onClick`, and keeps its own About entry. They are drawn borderless, matching `LuckyUI.CreateIconButton`: gold art and label with no plate, lit on hover by the icon added over itself.
 - Three more shared icons in `Media\icons`: `copy`, `pencil` and `trash`.
 - `NewRichPanel` derives a What's New floor when the panel names no `minVersion`: two minors back from the addon's `## Version`, so the list keeps itself current with no constant to bump. An explicit `minVersion`, or a legacy `recentVersions` list, still wins.
+- `LuckyUI.DOT` is the separator glyph to join label parts with, a middle dot everywhere except ruRU, whose font has no glyph for one and takes a hyphen instead. Callers add their own spacing around it.
+
+### Fixed
+- `RichBuilder:Finalize` publishes `whatsNewGroup` before any early return, so a panel that ends up with no What's New floor still hands callers a group. `LuckyPromo:AddToRichGroup(panel.whatsNewGroup, ...)` errored on a nil group otherwise.
+- `LuckyUI.TITLE_FONT` and `LuckyUI.BODY_FONT` follow `STANDARD_TEXT_FONT` rather than hardcoding `Fonts\FRIZQT__.TTF`, which carries no Cyrillic or CJK glyphs, so ruRU, koKR, zhCN and zhTW clients draw text instead of empty boxes. `LuckySettings` and `LuckyRichSettings` take their font from `LuckyUI.BODY_FONT` for the same reason.
 
 ## [1.13.1] - 2026-08-23
 
