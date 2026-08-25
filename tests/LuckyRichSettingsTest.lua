@@ -270,4 +270,14 @@ local legacy = LuckySettings:NewRichPanel("Legacy Addon",
     { addonFolder = "Any_Addon", recentVersions = { "1.5.0" } })
 assert(legacy.minVersion == nil, "a recentVersions panel keeps its legacy list")
 
+-------------------------------------------------------------------------------
+-- The promo row hangs off whatsNewGroup, so it is published even when no floor
+-- can be worked out at all and there is no list to build.
+-------------------------------------------------------------------------------
+local floorless = LuckySettings:NewRichPanel("Floorless Addon", {})
+local only = floorless:Group("Only")
+floorless:Finalize()
+assert(floorless.minVersion == nil, "no addon folder leaves the panel without a floor")
+assert(floorless.whatsNewGroup == only, "the first group is published with no What's New list")
+
 print("LuckyRichSettings tests passed")

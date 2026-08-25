@@ -197,6 +197,12 @@ end
 function RichBuilder:Finalize()
     if self._finalized then return end
     self._finalized = true
+
+    -- Callers hang their version info and promo rows off this group, so it is
+    -- published before any early return, not just when there is a list to show.
+    local host = self.groups[1]
+    self.whatsNewGroup = host
+
     if not self.recentVersions and not self.minVersion then return end
 
     -- What's New scans real rows for `since` flags, so pending group lambdas
@@ -217,10 +223,6 @@ function RichBuilder:Finalize()
         end
     end
 
-    -- Callers hang their version info and promo rows off this group, so it is
-    -- published even when nothing is new enough to list.
-    local host = self.groups[1]
-    self.whatsNewGroup = host
     if #grouped == 0 then return end
 
     -- A group named for the list does not need the heading repeated inside it.
@@ -240,7 +242,6 @@ function RichBuilder:Finalize()
     end
 
     host:EndScroll()
-    self.whatsNewGroup = host
 end
 
 function RichBuilder:Open()
