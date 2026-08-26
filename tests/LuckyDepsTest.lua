@@ -9,6 +9,7 @@
 LuckyDeps = nil
 
 local installed = {}
+local addonOrder = {}
 local enabledCalls = {}
 
 C_AddOns = {
@@ -25,14 +26,29 @@ C_AddOns = {
         local addon = installed[name]
         return addon and field == "Version" and addon.version or nil
     end,
-    GetAddOnDependencies = function(name)
+    GetAddOnDependencies = function(nameOrIndex)
         -- Returns varargs like the real one. Two is as many as any check needs.
+        -- StandaloneRemovable walks addons by index, so accept either form.
+        local name = addonOrder[nameOrIndex] or nameOrIndex
         local addon = installed[name]
         local dependencies = addon and addon.dependencies or {}
         return dependencies[1], dependencies[2]
     end,
     EnableAddOn = function(name) table.insert(enabledCalls, name) end,
+    DoesAddOnExist = function(name) return installed[name] ~= nil end,
+    GetNumAddOns = function() return #addonOrder end,
 }
+
+-- The standalone notice hangs an event frame off the module at load.
+local watcher
+CreateFrame = function()
+    watcher = {
+        RegisterEvent = function() end,
+        UnregisterAllEvents = function() end,
+        SetScript = function(self, _, fn) self.fire = fn end,
+    }
+    return watcher
+end
 
 dofile("LuckyStrings.lua")
 dofile("Strings.lua")
@@ -97,5 +113,37 @@ LuckyDeps:Enable("Baganator")
 assert(enabledCalls[1] == "Baganator", "the addon itself should be enabled first")
 assert(enabledCalls[2] == "Syndicator", "its dependencies should be enabled too")
 assert(#enabledCalls == 2, "nothing else should be enabled, enabled " .. #enabledCalls)
+
+-- ─── The "you can uninstall the standalone" notice ───────────────────────────
+-- It fires only where an embedded copy makes the standalone redundant, and it
+-- fires once ever, because a nag every login is worse than the problem.
+
+local shown = 0
+LuckyDeps.noticeFrame = { Show = function() shown = shown + 1 end }
+
+installed = { Luckys_Utils = { loaded = true }, Luckys_Loot_Wishlist = { loaded = true } }
+addonOrder = { "Luckys_Utils", "Luckys_Loot_Wishlist" }
+LuckysUtilsHosts = { "Luckys_Utils" }
+LuckySettingsDB = {}
+
+LuckyDeps:ShowStandaloneNotice()
+assert(shown == 0, "no embedded copy means the standalone is still doing the work")
+
+LuckysUtilsHosts = { "Luckys_Utils", "Luckys_Loot_Wishlist" }
+installed.Luckys_Loot_Wishlist.dependencies = { "Luckys_Utils" }
+LuckyDeps:ShowStandaloneNotice()
+assert(shown == 0, "an addon that requires the standalone would break without it")
+
+installed.Luckys_Loot_Wishlist.dependencies = nil
+LuckyDeps:ShowStandaloneNotice()
+assert(shown == 1, "an embedded copy with nothing requiring the standalone should notify")
+
+LuckyDeps:ShowStandaloneNotice()
+assert(shown == 1, "the notice must not come back on a later login")
+
+-- A fresh install that never saw it still gets it once.
+LuckySettingsDB = {}
+LuckyDeps:ShowStandaloneNotice()
+assert(shown == 2, "a profile that has not seen the notice should still get it")
 
 print("LuckyDeps: all checks passed")

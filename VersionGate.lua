@@ -9,13 +9,26 @@
 -- Bump MINOR on every release that changes any file in this library.
 -- A breaking API change goes in a new "LuckysUtils-2.0" major instead.
 
-local MAJOR, MINOR = "LuckysUtils-1.0", 10
+local MAJOR, MINOR = "LuckysUtils-1.0", 11
 
 -- Folder this copy loads from: the host addon when embedded, Luckys_Utils when
 -- standalone. Nil under a plain-Lua test harness, hence the fallback.
 local host = ... or "Luckys_Utils"
 
+-- The standalone addon is being retired, so at an equal version an embedded
+-- copy takes the registration rather than deferring to whichever loaded first.
+-- An embedded copy ships inside the addon that needs it; a standalone left over
+-- from an older install should not get to decide what every consumer runs. A
+-- genuinely newer copy still wins on version alone, whichever kind it is.
+local held = LibStub.minors[MAJOR]
+if held == MINOR and host ~= "Luckys_Utils" and LuckysUtilsWinner == "Luckys_Utils" then
+    LibStub.minors[MAJOR] = MINOR - 1
+end
+
 local lib, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
+-- Taking over from an equal version is not an upgrade, so migrations must read
+-- the version actually held rather than the one stepped back to force the swap.
+if lib then oldminor = held end
 
 -- Every copy that loads, winner or loser, leaves its host's folder name here,
 -- so the library can tell whether an embedded copy is present alongside the
@@ -27,6 +40,10 @@ LuckysUtilsHosts[#LuckysUtilsHosts + 1] = host
 -- newer copy already loaded and this copy's files must not run.
 LuckysUtilsSkipLoad = (lib == nil)
 if not lib then return end
+
+-- Which host's copy holds the registration, so a later embedded copy can tell
+-- whether the copy it is meeting is the standalone.
+LuckysUtilsWinner = host
 
 lib.oldminor = oldminor
 

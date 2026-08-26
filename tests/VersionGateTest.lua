@@ -69,4 +69,40 @@ for _, host in ipairs(LuckysUtilsHosts) do seen[host] = (seen[host] or 0) + 1 en
 assert(seen["Luckys_Utils"] == 2, "both standalone-shaped loads should be recorded")
 assert(seen["SomeHost"] == 1, "the embedded load should be recorded")
 
+-- ─── An embedded copy takes an equal version from the standalone ─────────────
+-- Serroc's case: a standalone that loaded first and half-installed decided what
+-- every consumer ran. At the same version the embedded copy now takes over, so
+-- the copy that ships with the addon needing it is the one that runs.
+
+LibStub = nil
+LuckysUtilsSkipLoad = nil
+LuckysUtilsHosts = nil
+LuckysUtilsWinner = nil
+LuckyUtils = nil
+
+dofile("LibStub.lua")
+dofile("VersionGate.lua")            -- standalone, via the host fallback
+assert(LuckysUtilsSkipLoad == false, "the standalone loads first and wins")
+assert(LuckysUtilsWinner == "Luckys_Utils", "the standalone should hold the registration")
+local tiedMinor = select(2, LibStub("LuckysUtils-1.0"))
+
+gate("EmbeddedHost")                 -- same version, embedded
+assert(LuckysUtilsSkipLoad == false, "an embedded copy must take an equal version")
+assert(LuckysUtilsWinner == "EmbeddedHost", "the embedded copy should now hold it")
+assert(select(2, LibStub("LuckysUtils-1.0")) == tiedMinor,
+    "taking over must leave the registered version where it was")
+assert(LuckyMedia("x.tga") == "Interface" .. string.char(92) .. "AddOns" .. string.char(92)
+    .. "EmbeddedHost" .. string.char(92) .. "Libs" .. string.char(92) .. "LuckysUtils"
+    .. string.char(92) .. "Media" .. string.char(92) .. "x.tga",
+    "the embedded copy's own media paths should be in force")
+
+-- A second standalone still loses to it, so the swap is not a free-for-all.
+gate()
+assert(LuckysUtilsSkipLoad == true, "a standalone must not take an equal version back")
+assert(LuckysUtilsWinner == "EmbeddedHost", "the embedded copy keeps the registration")
+
+-- Two embedded copies at one version keep the first-wins rule.
+gate("OtherHost")
+assert(LuckysUtilsSkipLoad == true, "embedded copies do not leapfrog each other")
+
 print("VersionGate tests passed")

@@ -108,3 +108,60 @@ function LuckyDeps:StandaloneRemovable()
     end
     return true
 end
+
+-- The "you can uninstall the standalone" notice ------------------------------
+-- Shown once, in a panel rather than chat, because the copy it warns about can
+-- be the reason a settings panel will not open in the first place.
+
+local NOTICE_W, NOTICE_H = 380, 210
+
+local function buildNotice()
+    local S = LuckyUtilsStrings.deps
+    local c = LuckyUI.C
+
+    local frame = LuckyUI.CreatePanel("LuckyUtilsStandaloneNotice", UIParent, NOTICE_W, NOTICE_H)
+    frame:SetFrameStrata("DIALOG")
+    frame:SetPoint("CENTER")
+    tinsert(UISpecialFrames, frame:GetName())
+
+    LuckyUI.CreateHeader(frame, S.standaloneTitle)
+
+    local body = frame:CreateFontString(nil, "OVERLAY")
+    body:SetFont(LuckyUI.BODY_FONT, 12)
+    body:SetTextColor(c.textLight[1], c.textLight[2], c.textLight[3])
+    body:SetPoint("TOPLEFT", 14, -44)
+    body:SetPoint("TOPRIGHT", -14, -44)
+    body:SetJustifyH("LEFT")
+    body:SetSpacing(3)
+    body:SetText(S.standaloneNotice)
+
+    local dismiss = LuckyUI.CreateButton(frame, S.standaloneDismiss, 90, 24, "primary")
+    dismiss:SetPoint("BOTTOM", 0, 14)
+    dismiss:SetScript("OnClick", function() frame:Hide() end)
+
+    return frame
+end
+
+-- The frame hangs off the module rather than a file local, so a newer copy
+-- taking over inherits the one already on screen instead of building a second.
+local function showStandaloneNotice()
+    if not LuckyDeps:StandaloneRemovable() then return end
+
+    LuckySettingsDB = LuckySettingsDB or {}
+    if LuckySettingsDB.standaloneNoticeSeen then return end
+    LuckySettingsDB.standaloneNoticeSeen = true
+
+    LuckyDeps.noticeFrame = LuckyDeps.noticeFrame or buildNotice()
+    LuckyDeps.noticeFrame:Show()
+end
+
+LuckyDeps.ShowStandaloneNotice = showStandaloneNotice
+
+local noticeWatcher = LuckyDeps.noticeWatcher or CreateFrame("Frame")
+LuckyDeps.noticeWatcher = noticeWatcher
+noticeWatcher:UnregisterAllEvents()
+noticeWatcher:RegisterEvent("PLAYER_LOGIN")
+noticeWatcher:SetScript("OnEvent", function(self)
+    self:UnregisterAllEvents()
+    showStandaloneNotice()
+end)

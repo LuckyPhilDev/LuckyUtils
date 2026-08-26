@@ -9,6 +9,10 @@ LuckyUtilsStrings = LuckyStrings.New("LuckyUtilsStrings", {
         versionSuffix = " version %s",
         required      = "%s is required for this feature.",
         disabled      = "%s is installed but switched off for this character.",
+
+        standaloneTitle   = "Lucky's Utils",
+        standaloneNotice  = "Lucky's Utils does not need installing on its own any more. Every one of my addons now carries its own copy, so you can remove the Lucky's Utils folder from your AddOns and everything keeps working.\n\nKeeping it does no harm, but a copy left behind from an older install can override the one your addons ship with.",
+        standaloneDismiss = "Got it",
     },
 
     profiles = {
