@@ -46,6 +46,9 @@ local handler = function() previousHandlerCalls = previousHandlerCalls + 1 end
 geterrorhandler = function() return handler end
 seterrorhandler = function(h) handler = h end
 
+-- Normally VersionGate.lua publishes this before any module loads.
+LuckyIcon = function(name) return "icons/" .. name .. ".tga" end
+
 dofile("LuckyStrings.lua")
 dofile("Strings.lua")
 dofile("LuckyUI.lua")
