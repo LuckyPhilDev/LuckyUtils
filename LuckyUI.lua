@@ -115,26 +115,11 @@ function LuckyUI.CreateHeader(frame, title)
     t:SetText(title)
     frame.titleText = t
 
-    -- Close button (red square with x)
-    local cb = CreateFrame("Button", nil, h)
-    cb:SetSize(20, 20)
+    -- Close button, the same borderless danger-tinted x the row actions use
+    local d = LuckyUI.C.danger
+    local cb = LuckyUI.CreateIconButton(h, { icon = "x", size = 18, color = { d[1], d[2], d[3], 0.75 } })
     cb:SetPoint("RIGHT", -8, 0)
-
-    local cbBg = cb:CreateTexture(nil, "BACKGROUND")
-    cbBg:SetAllPoints()
-    cbBg:SetColorTexture(LuckyUI.C.danger[1], LuckyUI.C.danger[2], LuckyUI.C.danger[3], 0.8)
-
-    local cbX = cb:CreateFontString(nil, "OVERLAY")
-    cbX:SetFont(LuckyUI.BODY_FONT, 12, "OUTLINE")
-    cbX:SetTextColor(1, 1, 1)
-    cbX:SetPoint("CENTER", 0, 1)
-    cbX:SetText("x")
-
     cb:SetScript("OnClick", function() frame:Hide() end)
-    cb:SetScript("OnEnter", function() cbBg:SetColorTexture(1, 0.3, 0.3, 1) end)
-    cb:SetScript("OnLeave", function()
-        cbBg:SetColorTexture(LuckyUI.C.danger[1], LuckyUI.C.danger[2], LuckyUI.C.danger[3], 0.8)
-    end)
 
     frame.header = h
     return h
