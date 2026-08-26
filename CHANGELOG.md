@@ -1,3 +1,8 @@
+## [1.15.1] - 2026-08-26
+
+### Fixed
+- Copies of this library from before the version gate open each file with `LuckyUI = {}` rather than `LuckyUI = LuckyUI or {}`, and consult nothing that would stop them, so one loading after the winning copy replaced the published tables and dropped every function added since. Consumers then called a nil on a table that still looked intact, which is what `LuckySettings:NewRichPanel` and `LuckyDeps:StandaloneRemovable` were both hitting. The winning copy now remembers what it published as its own host finishes loading and puts it back as each later addon comes in.
+
 ## [1.15.0] - 2026-08-26
 
 ### Added

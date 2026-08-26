@@ -1,3 +1,4 @@
+-- luacheck: globals fireHealer
 -- luacheck: globals LibStub LuckysUtilsSkipLoad LuckysUtilsHosts LuckyMedia LuckyIcon LuckyUtils
 
 -- Two copies of the library loading in one session: LibStub must let exactly
@@ -13,6 +14,16 @@ LuckyUtils = nil
 
 -- First copy loads: registers and runs. Loaded via dofile, so the host
 -- fallback makes it behave as the standalone addon.
+-- The gate keeps one frame for the self-healing listener.
+local healerEvents = {}
+CreateFrame = CreateFrame or function()
+    return {
+        RegisterEvent = function(self, e) healerEvents[e] = true end,
+        UnregisterAllEvents = function() healerEvents = {} end,
+        SetScript = function(self, _, fn) fireHealer = fn end,
+    }
+end
+
 dofile("LibStub.lua")
 dofile("VersionGate.lua")
 assert(LuckysUtilsSkipLoad == false, "first copy should run")
@@ -104,5 +115,44 @@ assert(LuckysUtilsWinner == "EmbeddedHost", "the embedded copy keeps the registr
 -- Two embedded copies at one version keep the first-wins rule.
 gate("OtherHost")
 assert(LuckysUtilsSkipLoad == true, "embedded copies do not leapfrog each other")
+
+-- ─── A pre-gate copy loading later must not strip the winner ─────────────────
+-- Copies from before the gate open each file with `LuckyX = {}`, replacing the
+-- published tables rather than merging into them, and they consult nothing that
+-- would stop them. The winner snapshots what it published as its own host
+-- finishes loading, and puts it back as each later addon comes in.
+
+LibStub = nil
+LuckysUtilsSkipLoad, LuckysUtilsHosts, LuckysUtilsWinner = nil, nil, nil
+LuckyUtils, LuckyDeps, LuckySettings = nil, nil, nil
+
+dofile("LibStub.lua")
+dofile("VersionGate.lua")
+dofile("LuckyUtils.lua")
+LuckyDeps = { StandaloneRemovable = function() return true end }
+local published = LuckyDeps
+
+fireHealer(nil, "ADDON_LOADED", "Luckys_Utils")   -- our own host finishes loading
+
+-- A pre-gate copy inside some later addon replaces the table wholesale.
+LuckyDeps = {}
+fireHealer(nil, "ADDON_LOADED", "SomeOtherAddon")
+assert(LuckyDeps == published, "a table replaced after our load must be put back")
+assert(type(LuckyDeps.StandaloneRemovable) == "function",
+    "the functions the winner published must come back with it")
+
+-- Anything the library never published is left alone.
+SomeConsumerGlobal = { mine = true }
+LuckyDeps = {}
+fireHealer(nil, "PLAYER_LOGIN")
+assert(LuckyDeps == published, "the login sweep restores too")
+assert(SomeConsumerGlobal.mine == true, "globals the library never published are not touched")
+
+-- A table the winner legitimately replaces later is re-snapshotted, not undone.
+LuckyDeps = { StandaloneRemovable = function() return false end }
+local replacement = LuckyDeps
+fireHealer(nil, "ADDON_LOADED", "Luckys_Utils")
+fireHealer(nil, "PLAYER_LOGIN")
+assert(LuckyDeps == replacement, "a fresh snapshot must win over the previous one")
 
 print("VersionGate tests passed")

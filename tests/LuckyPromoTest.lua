@@ -4,6 +4,12 @@
 -- has to answer for a suite addon and stay quiet for anything else.
 
 StaticPopupDialogs, SlashCmdList = {}, {}
+
+-- The gate keeps one frame for its self-healing listener.
+CreateFrame = function()
+    return { RegisterEvent = function() end, UnregisterAllEvents = function() end,
+             SetScript = function() end }
+end
 dofile("LibStub.lua")
 loadfile("VersionGate.lua")("Luckys_Utils")
 dofile("LuckyStrings.lua")

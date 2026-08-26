@@ -142,10 +142,14 @@ local function buildNotice()
     return frame
 end
 
--- The frame hangs off the module rather than a file local, so a newer copy
+-- Held directly rather than read off the global, because a pre-gate copy can
+-- replace the table and both this and the gate's repair answer PLAYER_LOGIN,
+-- in an order nothing promises. The frame hangs off the module so a newer copy
 -- taking over inherits the one already on screen instead of building a second.
+local standaloneRemovable = LuckyDeps.StandaloneRemovable
+
 local function showStandaloneNotice()
-    if not LuckyDeps:StandaloneRemovable() then return end
+    if not standaloneRemovable(LuckyDeps) then return end
 
     LuckySettingsDB = LuckySettingsDB or {}
     if LuckySettingsDB.standaloneNoticeSeen then return end

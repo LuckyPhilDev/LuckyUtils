@@ -9,7 +9,7 @@
 -- Bump MINOR on every release that changes any file in this library.
 -- A breaking API change goes in a new "LuckysUtils-2.0" major instead.
 
-local MAJOR, MINOR = "LuckysUtils-1.0", 11
+local MAJOR, MINOR = "LuckysUtils-1.0", 12
 
 -- Folder this copy loads from: the host addon when embedded, Luckys_Utils when
 -- standalone. Nil under a plain-Lua test harness, hence the fallback.
@@ -70,3 +70,54 @@ end
 -- if oldminor and oldminor < 2 then
 --     -- migrate state created by minor 1 here
 -- end
+
+-- Self-healing against pre-gate copies -----------------------------------------
+-- Copies of this library from before the version gate open every file with
+-- `LuckyUI = {}` rather than `LuckyUI = LuckyUI or {}`. They consult nothing,
+-- so when one loads after the winning copy it replaces the published tables
+-- outright and every function added since simply disappears; consumers then
+-- call a nil on a table that still looks fine. Nothing can stop that
+-- assignment, so instead the winner remembers what it published as its own
+-- host finishes loading, and puts it back as each later addon comes in.
+--
+-- ponytail: restores between addon loads, not during one. A consumer that
+-- calls into the library from its own file scope, after a pre-gate copy has
+-- loaded in the same addon, is still on its own. Hook into the loader if that
+-- ever shows up in a report.
+local PUBLISHED = {
+    "LuckyBankQueue", "LuckyBugs", "LuckyDB", "LuckyDeps", "LuckyIcon",
+    "LuckyItem", "LuckyLog", "LuckyMedia", "LuckyMinimap", "LuckyProfiles",
+    "LuckyPromo", "LuckyRoster", "LuckySettings", "LuckySound", "LuckyStrings",
+    "LuckyUI", "LuckyUtils", "LuckyUtilsStrings",
+}
+
+lib.published = lib.published or {}
+
+local function rememberPublished()
+    for _, name in ipairs(PUBLISHED) do
+        if _G[name] ~= nil then lib.published[name] = _G[name] end
+    end
+end
+
+local function restorePublished()
+    for name, value in pairs(lib.published) do
+        if _G[name] ~= value then _G[name] = value end
+    end
+end
+
+lib.RestorePublished = restorePublished
+
+-- One frame for the library, kept across a takeover so a newer copy inherits it
+-- rather than leaving a second listener behind.
+local healer = lib.healer or CreateFrame("Frame")
+lib.healer = healer
+healer:UnregisterAllEvents()
+healer:RegisterEvent("ADDON_LOADED")
+healer:RegisterEvent("PLAYER_LOGIN")
+healer:SetScript("OnEvent", function(_, event, addon)
+    if event == "ADDON_LOADED" and addon == host then
+        rememberPublished()
+    else
+        restorePublished()
+    end
+end)
