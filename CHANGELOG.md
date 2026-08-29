@@ -2,10 +2,11 @@
 
 ### Improved
 - A rich settings row may name a `Slider` as its `parent`, not just a `Toggle`. The child locks and dims while the parent reads zero and unlocks the moment it is dragged off zero; previously a slider parent gave indentation only.
-- A rich settings row given a `warning` string now draws a red `triangle-alert` icon in its leading space, with the warning in a tooltip on hover. The control shifts right to make room, and the icon forwards hover to the row so the About rail still tracks it. Previously `warning` reached the About rail only.
+- A rich settings row given a `warning` string now draws a red `triangle-alert` icon in its leading space, with the warning in a tooltip on hover. The control shifts right to make room, and the icon forwards hover to the row so the About rail still tracks it. Previously `warning` reached the About rail only. An optional `warningLevel`, a string or a zero-arg function returning `caution` or `danger`, paints it amber or red and is re-read whenever the row's value changes, so a row is loud only on the choice that is actually irreversible.
 - A settings group whose rows outgrow the panel now folds them into a scrolling region the first time it is shown, instead of running off the bottom. It happens after the group is built, so the rows keep the anchor chain they were placed in, and a group that built its own `Fill` region is left alone. A group that fits looks unchanged: the scrollbar hides itself and gives its width back. `VersionGate` MINOR is 14.
 
 ### Fixed
+- A scrolling region whose content fits no longer keeps its scrollbar, or the width reserved for it. `OnScrollRangeChanged` only fires when the range changes, so a region built around content that already fitted never heard about it; the bar now follows the child measured against the region, on size as well as range, and is settled once at build time.
 - A settings row locks when any ancestor is cleared, not just the row directly above it. `applyEnabled` read the parent's checkbox without asking whether that parent was itself enabled, so a grandchild under a ticked parent stayed usable while the grandparent was off, and toggling a parent only re-applied one level of children instead of the whole subtree.
 
 ## [1.15.1] - 2026-08-26
