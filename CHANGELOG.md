@@ -1,4 +1,4 @@
-## [Unreleased]
+## [1.16.0] - 2026-08-29
 
 ### Improved
 - A rich settings row may name a `Slider` as its `parent`, not just a `Toggle`. The child locks and dims while the parent reads zero and unlocks the moment it is dragged off zero; previously a slider parent gave indentation only.
