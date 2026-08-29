@@ -32,6 +32,7 @@ local function newFrame(kind, parent)
         kind     = kind,
         parent   = parent,
         children = {},
+        textures = {},
         points  = {},
         scripts = {},
         height  = 0,
@@ -46,11 +47,14 @@ local function newFrame(kind, parent)
         SetWidth         = function(self, w) self.width = w end,
         GetWidth         = function(self) return self.width end,
         SetSize          = function(self, w, h) self.width, self.height = w, h end,
-        CreateTexture    = function()
-            return stub({
+        CreateTexture    = function(self)
+            local tex = stub({
                 points   = {},
-                SetPoint = function(self, point, rel) self.points[point] = { rel = rel } end,
+                SetPoint = function(t, point, rel) t.points[point] = { rel = rel } end,
+                SetVertexColor = function(t, r, g, b) t.color = { r, g, b } end,
             })
+            if self.textures then table.insert(self.textures, tex) end
+            return tex
         end,
         CreateFontString = function() return newText() end,
         HookScript       = function(self, event, fn) self.scripts[event] = fn end,
@@ -188,12 +192,17 @@ assert(general.rowParent == nil, "the scroll region closed, so later rows flow n
 -------------------------------------------------------------------------------
 -- The scrollbar shows only when the cards outgrow the region.
 -------------------------------------------------------------------------------
+-- Measured from the child against the region, not from the scroll range: a
+-- region that fits from the moment it is built has a range of zero that never
+-- changes, which left the bar showing over content that did not need it.
 local scroll = scrollChild.parent
-scroll.scripts.OnScrollRangeChanged(scroll, 0, 0)
+scroll:SetHeight(200)
+scroll.scripts.OnScrollRangeChanged(scroll)
 assert(scroll.ScrollBar.shown == false, "a list that fits shows no scrollbar")
 assert(scroll.points.BOTTOMRIGHT.rel == 0, "and the rows take back the scrollbar's width")
 
-scroll.scripts.OnScrollRangeChanged(scroll, 0, 120)
+scroll:SetHeight(20)
+scroll.scripts.OnScrollRangeChanged(scroll)
 assert(scroll.ScrollBar.shown == true, "a list that overflows shows the scrollbar")
 assert(scroll.points.BOTTOMRIGHT.rel == -22, "and the rows make room for it")
 
@@ -443,5 +452,49 @@ feature:SetChecked(true)
 feature.scripts.OnClick(feature)
 assert(minKey.enabled == true, "ticking it back unlocks them again")
 assert(diffs.enabled == true, "both of them")
+
+-------------------------------------------------------------------------------
+-- A warning whose level depends on the row's value repaints when it changes, so
+-- the row can read amber on the safe choice and red on the one that sticks.
+-------------------------------------------------------------------------------
+local R = LuckySettings.Rich.Theme
+local mode = "safe"
+local graded = LuckySettings:NewRichPanel("Graded Addon", {})
+local gradedRows = graded:Group("Graded")
+gradedRows:Select({
+    label        = "What happens",
+    warning      = "The risky one cannot be undone.",
+    warningLevel = function() return mode == "safe" and "caution" or "danger" end,
+    options      = { { key = "safe", label = "Safe" }, { key = "risky", label = "Risky" } },
+    value        = function() return mode end,
+    onSelect     = function(key) mode = key end,
+})
+gradedRows:Toggle({ label = "Plain warning", checked = false, warning = "Always loud." })
+graded:Finalize()
+
+local function warnColour(label)
+    local row = findSetting(gradedRows, label).row
+    for _, child in ipairs(row.children) do
+        if child.textures and child.textures[1] and child.textures[1].color then
+            return child.textures[1].color
+        end
+    end
+end
+
+local function sameColour(a, b)
+    return a and b and a[1] == b[1] and a[2] == b[2] and a[3] == b[3]
+end
+
+assert(sameColour(warnColour("What happens"), R.caution), "the safe choice paints the icon amber")
+assert(sameColour(warnColour("Plain warning"), R.warn),
+    "a warning with no level stays red, the louder of the two")
+
+mode = "risky"
+findSetting(gradedRows, "What happens").refreshSelect()
+assert(sameColour(warnColour("What happens"), R.warn), "picking the risky choice turns it red")
+
+mode = "safe"
+findSetting(gradedRows, "What happens").refreshSelect()
+assert(sameColour(warnColour("What happens"), R.caution), "and going back turns it amber again")
 
 print("LuckyRichSettings tests passed")

@@ -100,6 +100,15 @@ local function refreshEnabled(group)
     end
 end
 
+-- A warning whose level is function-valued follows the row it sits on, so it is
+-- re-read wherever that row's value can have changed.
+local function refreshWarnings(group)
+    for _, setting in ipairs(group.settings) do
+        local icon = setting.row and rowWarnIcons[setting.row]
+        if icon then icon.Repaint() end
+    end
+end
+
 -- Re-read function-valued row state across all built groups. SetChecked and
 -- SetValue don't fire OnClick/onToggle, and a slider's OnValueChanged only
 -- fires when the value actually differs, so this never causes spurious writes.
@@ -118,6 +127,7 @@ local function refreshLiveValues(builder)
         for _, s in ipairs(g.settings) do
             if s.parentSetting then applyEnabled(s) end
         end
+        refreshWarnings(g)
     end
 end
 
@@ -184,9 +194,13 @@ local function baseIndent(opts)
     return opts.parent and 30 or 14
 end
 
--- The art is white, so the red is applied here. It is a button rather than a
+-- The art is white, so the colour is applied here. It is a button rather than a
 -- texture because the warning has to be readable without hovering the control
 -- the row belongs to.
+--
+-- `warningLevel` may be a function, so a row whose risk depends on the value it
+-- holds can read amber on the safe choice and red on the one that cannot be
+-- undone. Anything unrecognised stays red, the louder of the two.
 local function makeWarningIcon(row, opts)
     local icon = CreateFrame("Button", nil, row)
     icon:SetSize(WARN_ICON_SIZE, WARN_ICON_SIZE)
@@ -195,7 +209,12 @@ local function makeWarningIcon(row, opts)
     local tex = icon:CreateTexture(nil, "ARTWORK")
     tex:SetAllPoints()
     tex:SetTexture(LuckyIcon("triangle-alert"))
-    tex:SetVertexColor(R.warn[1], R.warn[2], R.warn[3])
+
+    icon.Repaint = function()
+        local color = resolveValue(opts.warningLevel) == "caution" and R.caution or R.warn
+        tex:SetVertexColor(color[1], color[2], color[3])
+    end
+    icon.Repaint()
 
     icon:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -271,6 +290,7 @@ function RichGroup:Toggle(opts)
         image     = opts.image,
         imageSize = opts.imageSize,
         warning   = opts.warning,
+        warningLevel = opts.warningLevel,
         requires  = opts.requires,
         since     = opts.since,
         row      = row,
@@ -301,6 +321,7 @@ function RichGroup:Toggle(opts)
         local v = c:GetChecked() and true or false
         if opts.onToggle then opts.onToggle(v) end
         refreshEnabled(group)
+        refreshWarnings(group)
         group.panel:UpdateAbout(setting)
     end)
 
@@ -349,6 +370,7 @@ function RichGroup:Slider(opts)
         image     = opts.image,
         imageSize = opts.imageSize,
         warning   = opts.warning,
+        warningLevel = opts.warningLevel,
         since     = opts.since,
         min       = opts.min,
         max       = opts.max,
@@ -366,6 +388,7 @@ function RichGroup:Slider(opts)
         valueText:SetText(tostring(val) .. (opts.suffix or ""))
         if opts.onChanged then opts.onChanged(val) end
         refreshEnabled(group)
+        refreshWarnings(group)
     end)
 
     table.insert(self.settings, setting)
@@ -448,6 +471,7 @@ function RichGroup:MultiSelect(opts)
         desc     = opts.desc,
         tooltip  = opts.tooltip,
         warning  = opts.warning,
+        warningLevel = opts.warningLevel,
         since    = opts.since,
         row      = row,
         rowHover = hl,
@@ -509,8 +533,10 @@ function RichGroup:Select(opts)
         end
     end
 
+    local group = self
     local function refresh()
         dd:SetDefaultText(labelFor(resolveValue(opts.value)) or opts.placeholder or "")
+        refreshWarnings(group)
     end
 
     dd:SetupMenu(function(_, root)
@@ -534,6 +560,7 @@ function RichGroup:Select(opts)
         image    = opts.image,
         imageSize = opts.imageSize,
         warning  = opts.warning,
+        warningLevel = opts.warningLevel,
         since    = opts.since,
         row      = row,
         rowHover = hl,
@@ -575,6 +602,7 @@ function RichGroup:Button(opts)
         image     = opts.image,
         imageSize = opts.imageSize,
         warning   = opts.warning,
+        warningLevel = opts.warningLevel,
         since     = opts.since,
         row      = row,
         rowHover = hl,
@@ -951,24 +979,48 @@ end
 -- must keep the returned frame's height in sync with its content so the scroll
 -- range is correct. Must be the last row added to the group.
 
+local SCROLLBAR_WIDTH = 22
+
+-- Content that fits needs no scrollbar, and gives its width back to the rows.
+-- Measured from the child rather than the scroll range because a region that
+-- fits from the moment it is built has a range of zero that never changes, so
+-- OnScrollRangeChanged alone would leave the bar showing over a short group.
+local function updateScrollbar(scroll, inner)
+    local bar = scroll.ScrollBar
+    if not bar then return end
+
+    local scrollable = (inner:GetHeight() or 0) > (scroll:GetHeight() or 0) + 0.5
+    if scroll.luckyScrollable == scrollable then return end
+    scroll.luckyScrollable = scrollable
+
+    bar:SetShown(scrollable)
+    scroll:SetPoint("BOTTOMRIGHT", scrollable and -SCROLLBAR_WIDTH or 0, 0)
+end
+
 local function makeScrollRegion(holder)
     local scroll = CreateFrame("ScrollFrame", nil, holder, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT")
-    scroll:SetPoint("BOTTOMRIGHT", -22, 0)
+    scroll:SetPoint("BOTTOMRIGHT", -SCROLLBAR_WIDTH, 0)
 
     local inner = CreateFrame("Frame", nil, scroll)
     inner:SetSize(scroll:GetWidth() or 400, 1)
     scroll:SetScrollChild(inner)
-    scroll:HookScript("OnSizeChanged", function(_, w) inner:SetWidth(w) end)
 
-    -- Content that fits needs no scrollbar, and gives its 22px back to the rows.
-    scroll:HookScript("OnScrollRangeChanged", function(self, _, yRange)
-        local bar = self.ScrollBar
-        if not bar then return end
-        local scrollable = (yRange or self:GetVerticalScrollRange()) > 0
-        bar:SetShown(scrollable)
-        self:SetPoint("BOTTOMRIGHT", scrollable and -22 or 0, 0)
+    -- Both fire: the size once the anchors resolve, the range once the child is
+    -- filled. Whichever lands first with real numbers settles the bar, and the
+    -- stored state keeps the other from re-anchoring for the same answer.
+    scroll:HookScript("OnSizeChanged", function(self, w)
+        inner:SetWidth(w)
+        updateScrollbar(self, inner)
     end)
+    scroll:HookScript("OnScrollRangeChanged", function(self)
+        updateScrollbar(self, inner)
+    end)
+
+    -- The template starts with the bar showing. Settling it now on an empty
+    -- child means a region nothing ever fires for is left without a bar rather
+    -- than stuck behind one, and the wheel still scrolls either way.
+    updateScrollbar(scroll, inner)
 
     return inner
 end
