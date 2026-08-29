@@ -1,7 +1,8 @@
 ## [Unreleased]
 
 ### Improved
-- A rich settings row may name a `Slider` as its `parent`, not just a `Toggle`. The child locks and dims while the parent reads zero and unlocks the moment it is dragged off zero; previously a slider parent gave indentation only. `VersionGate` MINOR is 13.
+- A rich settings row may name a `Slider` as its `parent`, not just a `Toggle`. The child locks and dims while the parent reads zero and unlocks the moment it is dragged off zero; previously a slider parent gave indentation only.
+- A rich settings row given a `warning` string now draws a red `triangle-alert` icon in its leading space, with the warning in a tooltip on hover. The control shifts right to make room, and the icon forwards hover to the row so the About rail still tracks it. Previously `warning` reached the About rail only. `VersionGate` MINOR is 14.
 
 ## [1.15.1] - 2026-08-26
 

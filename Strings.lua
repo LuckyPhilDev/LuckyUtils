@@ -105,5 +105,6 @@ LuckyUtilsStrings = LuckyStrings.New("LuckyUtilsStrings", {
         selectNone     = "None",
         selectAll      = "All",
         selectSome     = "%d of %d",
+        warningTitle   = "Warning",
     },
 })

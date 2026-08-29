@@ -23,8 +23,9 @@ end
 
 local function newFrame(kind, parent)
     local frame = stub({
-        kind    = kind,
-        parent  = parent,
+        kind     = kind,
+        parent   = parent,
+        children = {},
         points  = {},
         scripts = {},
         height  = 0,
@@ -48,7 +49,10 @@ local function newFrame(kind, parent)
         HookScript       = function(self, event, fn) self.scripts[event] = fn end,
         SetScript        = function(self, event, fn) self.scripts[event] = fn end,
     })
-
+    if kind == "Button" then
+        frame.fontString   = newText()
+        frame.GetFontString = function(self) return self.fontString end
+    end
     if kind == "Slider" then
         frame.value    = 0
         frame.Low      = newText()
@@ -61,10 +65,6 @@ local function newFrame(kind, parent)
         frame.GetValue   = function(self) return self.value end
         frame.SetEnabled = function(self, on) self.enabled = on end
     end
-    if kind == "Button" then
-        frame.fontString   = newText()
-        frame.GetFontString = function(self) return self.fontString end
-    end
     if kind == "ScrollFrame" then
         frame.ScrollBar = stub({ SetShown = function(self, shown) self.shown = shown end })
     elseif kind == "DropdownButton" then
@@ -74,7 +74,11 @@ local function newFrame(kind, parent)
     return frame
 end
 
-CreateFrame = function(kind, _, parent) return newFrame(kind, parent) end
+CreateFrame = function(kind, _, parent)
+    local frame = newFrame(kind, parent)
+    if parent and parent.children then table.insert(parent.children, frame) end
+    return frame
+end
 
 LuckyUI = stub({
     Backdrop = {},
@@ -311,5 +315,39 @@ assert(forget.enabled == true, "dragging the parent off zero unlocks the child")
 
 hold:SetValue(0)
 assert(forget.enabled == false, "back to zero locks the child again")
+
+-------------------------------------------------------------------------------
+-- A warning gives the row a red icon in its leading space, and the control
+-- shifts right to clear it.
+-------------------------------------------------------------------------------
+local risky = LuckySettings:NewRichPanel("Risky Addon", {})
+local riskyRows = risky:Group("Risky")
+riskyRows:Toggle({ label = "Safe",   checked = false })
+riskyRows:Toggle({ label = "Sharp",  checked = false, warning = "This one bites." })
+riskyRows:Toggle({ label = "Nested", checked = false, parent = "Sharp", warning = "So does this." })
+risky:Finalize()
+
+local safe   = findSetting(riskyRows, "Safe")
+local sharp  = findSetting(riskyRows, "Sharp")
+local nested = findSetting(riskyRows, "Nested")
+
+assert(safe.checkbox.points.LEFT.rel == 14, "a row with no warning keeps the plain indent")
+assert(sharp.checkbox.points.LEFT.rel == 14 + 14 + 6, "a warning shifts the control clear of the icon")
+assert(nested.checkbox.points.LEFT.rel == 30 + 14 + 6, "a child row shifts from its own deeper indent")
+
+-- The icon is built before the checkbox, and is the only other frame on the row.
+local warnIcon
+for _, child in ipairs(sharp.row.children) do
+    if child ~= sharp.checkbox then warnIcon = child break end
+end
+assert(warnIcon, "a warning row carries an icon frame")
+assert(warnIcon.points.LEFT.rel == 14, "the icon takes the space the control gave up")
+
+-- Hovering the icon must still drive the About rail, or it goes blank behind
+-- the tooltip the icon puts up.
+local hovered
+risky.UpdateAbout = function(_, setting) hovered = setting end
+warnIcon.scripts.OnEnter()
+assert(hovered == sharp, "hovering the icon still updates the About rail")
 
 print("LuckyRichSettings tests passed")

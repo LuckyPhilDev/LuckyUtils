@@ -15,6 +15,10 @@ local RichGroup        = Rich.RichGroup
 local isVersionRecent  = Rich.isVersionRecent
 local hideImagePreview = Rich.hideImagePreview
 
+-- Keyed by row so a warning icon does not have to be stamped onto the frame,
+-- and drops with the row it belongs to.
+local rowWarnIcons = setmetatable({}, { __mode = "k" })
+
 -- Row state (`checked` on Toggle, `value` on Slider) may be a plain value or a
 -- zero-arg function. Function-valued state is re-read every time the panel is
 -- shown, so changes made while it was closed (slash commands, minimap toggles)
@@ -120,6 +124,13 @@ local function attachHover(setting, group, extraFrames)
     end
     setting.row:SetScript("OnEnter", onEnter)
     setting.row:SetScript("OnLeave", onLeave)
+    -- The icon sits inside the row and swallows its mouse events, so the About
+    -- rail would go blank while the warning tooltip is up.
+    local warnIcon = rowWarnIcons[setting.row]
+    if warnIcon then
+        warnIcon:HookScript("OnEnter", onEnter)
+        warnIcon:HookScript("OnLeave", onLeave)
+    end
     if extraFrames then
         for _, f in ipairs(extraFrames) do
             f:HookScript("OnEnter", onEnter)
@@ -152,6 +163,38 @@ local function placeRow(group, frame)
     end
 end
 
+local WARN_ICON_SIZE = 14
+local WARN_ICON_GAP  = 6
+
+local function baseIndent(opts)
+    return opts.parent and 30 or 14
+end
+
+-- The art is white, so the red is applied here. It is a button rather than a
+-- texture because the warning has to be readable without hovering the control
+-- the row belongs to.
+local function makeWarningIcon(row, opts)
+    local icon = CreateFrame("Button", nil, row)
+    icon:SetSize(WARN_ICON_SIZE, WARN_ICON_SIZE)
+    icon:SetPoint("LEFT", baseIndent(opts), 0)
+
+    local tex = icon:CreateTexture(nil, "ARTWORK")
+    tex:SetAllPoints()
+    tex:SetTexture(LuckyIcon("triangle-alert"))
+    tex:SetVertexColor(R.warn[1], R.warn[2], R.warn[3])
+
+    icon:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(S.warningTitle, R.warn[1], R.warn[2], R.warn[3])
+        GameTooltip:AddLine(opts.warning, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    icon:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    rowWarnIcons[row] = icon
+    return icon
+end
+
 local function makeRow(group, opts, height)
     local row = CreateFrame("Frame", nil, rowParent(group))
     row:EnableMouse(true)
@@ -173,11 +216,17 @@ local function makeRow(group, opts, height)
         leftRule:SetColorTexture(R.accent[1], R.accent[2], R.accent[3], 0.20)
     end
 
+    if opts.warning then
+        makeWarningIcon(row, opts)
+    end
+
     return row, hl
 end
 
+-- A row carrying a warning gives up its leading space to the icon, so the
+-- control it belongs to shifts right rather than sitting on top of it.
 local function indentForOpts(opts)
-    return opts.parent and 30 or 14
+    return baseIndent(opts) + (opts.warning and (WARN_ICON_SIZE + WARN_ICON_GAP) or 0)
 end
 
 function RichGroup:Toggle(opts)
