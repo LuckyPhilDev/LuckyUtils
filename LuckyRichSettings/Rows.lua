@@ -59,6 +59,10 @@ local function applyEnabled(setting)
             enabled = false
         elseif p.type == "Toggle" and p.checkbox then
             enabled = p.checkbox:GetChecked() and true or false
+        elseif p.type == "Slider" and p.slider then
+            -- A slider parent is a feature switched off at zero, so its
+            -- children lock there the same way a cleared checkbox locks them.
+            enabled = p.slider:GetValue() ~= 0
         end
     end
     setting.row:SetAlpha(enabled and 1 or 0.35)
@@ -295,10 +299,14 @@ function RichGroup:Slider(opts)
         getValue = type(opts.value) == "function" and opts.value or nil,
     }
 
+    local group = self
     slider:SetScript("OnValueChanged", function(_, val)
         val = math.floor(val + 0.5)
         valueText:SetText(tostring(val) .. (opts.suffix or ""))
         if opts.onChanged then opts.onChanged(val) end
+        for _, s in ipairs(group.settings) do
+            if s.parentSetting == setting then applyEnabled(s) end
+        end
     end)
 
     table.insert(self.settings, setting)

@@ -48,6 +48,19 @@ local function newFrame(kind, parent)
         HookScript       = function(self, event, fn) self.scripts[event] = fn end,
         SetScript        = function(self, event, fn) self.scripts[event] = fn end,
     })
+
+    if kind == "Slider" then
+        frame.value    = 0
+        frame.Low      = newText()
+        frame.High     = newText()
+        frame.SetValue = function(self, v)
+            self.value = v
+            local fn = self.scripts.OnValueChanged
+            if fn then fn(self, v) end
+        end
+        frame.GetValue   = function(self) return self.value end
+        frame.SetEnabled = function(self, on) self.enabled = on end
+    end
     if kind == "Button" then
         frame.fontString   = newText()
         frame.GetFontString = function(self) return self.fontString end
@@ -279,5 +292,24 @@ local only = floorless:Group("Only")
 floorless:Finalize()
 assert(floorless.minVersion == nil, "no addon folder leaves the panel without a floor")
 assert(floorless.whatsNewGroup == only, "the first group is published with no What's New list")
+
+-------------------------------------------------------------------------------
+-- A Slider parent locks its children at zero, the way a cleared Toggle does.
+-------------------------------------------------------------------------------
+local gated = LuckySettings:NewRichPanel("Gated Addon", {})
+local gatedRows = gated:Group("Gated")
+gatedRows:Slider({ label = "Hold",   min = 0, max = 120, value = 0 })
+gatedRows:Slider({ label = "Forget", min = 0, max = 30, value = 5, parent = "Hold" })
+gated:Finalize()
+
+local hold   = findSetting(gatedRows, "Hold").slider
+local forget = findSetting(gatedRows, "Forget").slider
+assert(forget.enabled == false, "a child under a slider parked at zero starts locked")
+
+hold:SetValue(30)
+assert(forget.enabled == true, "dragging the parent off zero unlocks the child")
+
+hold:SetValue(0)
+assert(forget.enabled == false, "back to zero locks the child again")
 
 print("LuckyRichSettings tests passed")
