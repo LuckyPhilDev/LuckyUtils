@@ -39,11 +39,21 @@ local function Log(...)
     devLog(...)
 end
 
+-- Building and scrolling are split because Finalize builds every group early to
+-- scan for `since` flags, and only afterwards hands the What's New list its own
+-- scrolling region. Scrolling on the way out of the build would take that space
+-- first and leave the list nested inside it.
 local function ensureGroupBuilt(group)
     local build = group and group._contents
     if not build then return end
     group._contents = nil -- cleared first so a build error can't rerun and double-add rows
     build(group)
+end
+
+local function ensureGroupShown(group)
+    if not group then return end
+    ensureGroupBuilt(group)
+    group:AutoScroll()
 end
 
 -- ─── Left nav ─────────────────────────────────────────────────────────────────
@@ -174,7 +184,7 @@ function RichBuilder:SetActiveGroup(group)
     end
     self.activeGroup = group
     -- While hidden, defer to the canvas OnShow hook so login stays cheap.
-    if self.canvas:IsShown() then ensureGroupBuilt(group) end
+    if self.canvas:IsShown() then ensureGroupShown(group) end
     self:_setAboutVisibility(group.showAbout)
     group.content:Show()
     styleNav(group.navButton, true)
@@ -475,7 +485,7 @@ function LuckySettings:NewRichPanel(displayName, opts, contents)
         if builder._onOpen then builder._onOpen() end
         refreshLiveValues(builder)
         if builder.activeGroup then
-            ensureGroupBuilt(builder.activeGroup)
+            ensureGroupShown(builder.activeGroup)
             builder:_setAboutVisibility(builder.activeGroup.showAbout)
             if builder.activeGroup.showAbout then
                 aboutShow(builder, builder.hoveredSetting or firstRealSetting(builder.activeGroup))

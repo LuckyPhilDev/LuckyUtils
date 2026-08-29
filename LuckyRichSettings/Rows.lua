@@ -941,16 +941,7 @@ end
 -- must keep the returned frame's height in sync with its content so the scroll
 -- range is correct. Must be the last row added to the group.
 
-function RichGroup:Fill(inset)
-    inset = inset or 14
-    local holder = CreateFrame("Frame", nil, self.content)
-    local anchor, anchorEdge = nextRowAnchor(self)
-    holder:SetPoint("TOPLEFT",  anchor, anchorEdge .. "LEFT",  inset, -8)
-    holder:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", -inset, -8)
-    self.fillHolder = holder
-    self.lastRow = holder
-    relayoutFill(self)
-
+local function makeScrollRegion(holder)
     local scroll = CreateFrame("ScrollFrame", nil, holder, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT")
     scroll:SetPoint("BOTTOMRIGHT", -22, 0)
@@ -969,8 +960,63 @@ function RichGroup:Fill(inset)
         self:SetPoint("BOTTOMRIGHT", scrollable and -22 or 0, 0)
     end)
 
+    return inner
+end
+
+function RichGroup:Fill(inset)
+    inset = inset or 14
+    local holder = CreateFrame("Frame", nil, self.content)
+    local anchor, anchorEdge = nextRowAnchor(self)
+    holder:SetPoint("TOPLEFT",  anchor, anchorEdge .. "LEFT",  inset, -8)
+    holder:SetPoint("TOPRIGHT", anchor, anchorEdge .. "RIGHT", -inset, -8)
+    self.fillHolder = holder
+    self.lastRow = holder
+    relayoutFill(self)
+
+    local inner = makeScrollRegion(holder)
     table.insert(self.settings, { row = holder, isSection = true })
     return inner
+end
+
+-- Rows are laid out flush in the group's content frame, which silently clips
+-- them once a group outgrows the panel. A group that has not built a scrolling
+-- region of its own gets one here, after its rows are placed, so the chain they
+-- were anchored in survives and only the first row is re-anchored. Groups that
+-- fit look no different: the scrollbar hides itself and gives the width back.
+function RichGroup:AutoScroll()
+    if self.fillHolder or self.rowParent then return false end
+
+    local rows = {}
+    for _, setting in ipairs(self.settings) do
+        if setting.row then table.insert(rows, setting.row) end
+    end
+    if #rows == 0 then return false end
+
+    -- Anchored to the heading rather than the last row, because every row is
+    -- about to move inside it.
+    local holder = CreateFrame("Frame", nil, self.content)
+    holder:SetPoint("TOPLEFT",  self.heading, "BOTTOMLEFT",  0, 0)
+    holder:SetPoint("TOPRIGHT", self.heading, "BOTTOMRIGHT", 0, 0)
+    self.fillHolder = holder
+    relayoutFill(self)
+
+    local inner = makeScrollRegion(holder)
+
+    local height = 0
+    for _, row in ipairs(rows) do
+        row:SetParent(inner)
+        height = height + row:GetHeight()
+    end
+
+    -- Left anchored outside the scroll frame, the first row would hold every
+    -- other one still while the region scrolled underneath it.
+    rows[1]:ClearAllPoints()
+    rows[1]:SetPoint("TOPLEFT",  inner, "TOPLEFT",  0, 0)
+    rows[1]:SetPoint("TOPRIGHT", inner, "TOPRIGHT", 0, 0)
+    inner:SetHeight(height)
+
+    self.rowParent, self.rowParentHeight, self.lastRow = inner, height, rows[#rows]
+    return true
 end
 
 --- Send the rows added from here on into a scrolling region that fills the

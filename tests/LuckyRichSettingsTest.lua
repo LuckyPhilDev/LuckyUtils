@@ -34,6 +34,7 @@ local function newFrame(kind, parent)
             self.points[point] = { rel = rel, relPoint = relPoint, x = x, y = y }
         end,
         ClearAllPoints   = function(self) self.points = {} end,
+        SetParent        = function(self, p) self.parent = p end,
         SetHeight        = function(self, h) self.height = h end,
         GetHeight        = function(self) return self.height end,
         SetWidth         = function(self, w) self.width = w end,
@@ -349,5 +350,42 @@ local hovered
 risky.UpdateAbout = function(_, setting) hovered = setting end
 warnIcon.scripts.OnEnter()
 assert(hovered == sharp, "hovering the icon still updates the About rail")
+
+-------------------------------------------------------------------------------
+-- A group too long for the panel folds its rows into a scrolling region rather
+-- than running off the bottom.
+-------------------------------------------------------------------------------
+local tall = LuckySettings:NewRichPanel("Tall Addon", {})
+local tallRows = tall:Group("Tall")
+for i = 1, 6 do tallRows:Toggle({ label = "Row " .. i, checked = false }) end
+tallRows:BottomLabel({ label = "Version", value = "1.0" })
+tall:Finalize()
+
+local firstRow = findSetting(tallRows, "Row 1").row
+local lastRow  = findSetting(tallRows, "Row 6").row
+local headingBefore = firstRow.points.TOPLEFT.rel
+
+assert(tallRows:AutoScroll(), "a group with rows and no fill region of its own scrolls")
+local inner = firstRow.parent
+assert(inner, "the rows moved into the scroll child")
+assert(lastRow.parent == inner, "every row moved, not just the first")
+assert(firstRow.points.TOPLEFT.rel == inner, "the first row re-anchors inside the region")
+assert(headingBefore ~= inner, "and was anchored outside it before")
+
+-- Anchored to the heading and stretched down to the bottom row, so the rows
+-- take the space between them rather than overlapping either.
+assert(tallRows.fillHolder.points.TOPLEFT.rel == tallRows.heading, "the region starts below the heading")
+assert(tallRows.fillHolder.points.BOTTOM.rel == tallRows.bottomSettings[1].row,
+    "and stops above the bottom rows")
+
+assert(tallRows:AutoScroll() == false, "scrolling an already scrolling group does nothing")
+
+-- A group that built its own list region keeps it; a second would nest.
+local listed = LuckySettings:NewRichPanel("Listed Addon", {})
+local listedRows = listed:Group("Listed")
+listedRows:Toggle({ label = "Above the list", checked = false })
+listedRows:Fill()
+listed:Finalize()
+assert(listedRows:AutoScroll() == false, "a group that called Fill is left alone")
 
 print("LuckyRichSettings tests passed")
