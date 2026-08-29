@@ -53,22 +53,28 @@ local function requiresUnmet(requires)
     return requires ~= nil and not LuckyDeps:Check(requires.addon, requires.minVersion)
 end
 
-local function applyEnabled(setting)
-    local enabled = true
-    if setting.disabled then
-        enabled = false
-    elseif setting.parentSetting then
-        local p = setting.parentSetting
-        if p.disabled then
-            enabled = false
-        elseif p.type == "Toggle" and p.checkbox then
-            enabled = p.checkbox:GetChecked() and true or false
-        elseif p.type == "Slider" and p.slider then
-            -- A slider parent is a feature switched off at zero, so its
-            -- children lock there the same way a cleared checkbox locks them.
-            enabled = p.slider:GetValue() ~= 0
-        end
+-- Walks the whole ancestry, not just the row above: a grandchild under a ticked
+-- parent is still locked when that parent's own parent is cleared.
+local function isEnabled(setting)
+    if setting.disabled then return false end
+
+    local p = setting.parentSetting
+    if not p then return true end
+    if not isEnabled(p) then return false end
+
+    if p.type == "Toggle" and p.checkbox then
+        return p.checkbox:GetChecked() and true or false
     end
+    if p.type == "Slider" and p.slider then
+        -- A slider parent is a feature switched off at zero, so its children
+        -- lock there the same way a cleared checkbox locks them.
+        return p.slider:GetValue() ~= 0
+    end
+    return true
+end
+
+local function applyEnabled(setting)
+    local enabled = isEnabled(setting)
     setting.row:SetAlpha(enabled and 1 or 0.35)
     if setting.checkbox then setting.checkbox:SetEnabled(enabled) end
     if setting.slider   then setting.slider:SetEnabled(enabled) end
@@ -83,6 +89,14 @@ local function applyEnabled(setting)
         else
             UIDropDownMenu_DisableDropDown(setting.dropdown)
         end
+    end
+end
+
+-- A parent changing re-locks its whole subtree, so every managed row in the
+-- group is re-applied rather than the row below it.
+local function refreshEnabled(group)
+    for _, setting in ipairs(group.settings) do
+        if setting.parentSetting or setting.disabled then applyEnabled(setting) end
     end
 end
 
@@ -286,9 +300,7 @@ function RichGroup:Toggle(opts)
     cb:SetScript("OnClick", function(c)
         local v = c:GetChecked() and true or false
         if opts.onToggle then opts.onToggle(v) end
-        for _, s in ipairs(group.settings) do
-            if s.parentSetting == setting then applyEnabled(s) end
-        end
+        refreshEnabled(group)
         group.panel:UpdateAbout(setting)
     end)
 
@@ -353,9 +365,7 @@ function RichGroup:Slider(opts)
         val = math.floor(val + 0.5)
         valueText:SetText(tostring(val) .. (opts.suffix or ""))
         if opts.onChanged then opts.onChanged(val) end
-        for _, s in ipairs(group.settings) do
-            if s.parentSetting == setting then applyEnabled(s) end
-        end
+        refreshEnabled(group)
     end)
 
     table.insert(self.settings, setting)

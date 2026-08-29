@@ -8,7 +8,13 @@
 
 local function noop() end
 
-local stubMeta = { __index = function() return noop end }
+local stubMeta = { __index = function(_, key)
+    -- A plain Frame has no SetEnabled in game, and MultiSelect branches on that
+    -- to tell the modern dropdown from the legacy one. Kinds that really have
+    -- it declare it below.
+    if key == "SetEnabled" then return nil end
+    return noop
+end }
 
 local function stub(fields)
     return setmetatable(fields or {}, stubMeta)
@@ -54,6 +60,16 @@ local function newFrame(kind, parent)
         frame.fontString   = newText()
         frame.GetFontString = function(self) return self.fontString end
     end
+    if kind == "Button" or kind == "CheckButton" or kind == "DropdownButton" then
+        frame.SetEnabled = function(self, on) self.enabled = on end
+    end
+
+    if kind == "CheckButton" then
+        frame.checked    = false
+        frame.SetChecked = function(self, on) self.checked = on and true or false end
+        frame.GetChecked = function(self) return self.checked end
+    end
+
     if kind == "Slider" then
         frame.value    = 0
         frame.Low      = newText()
@@ -74,6 +90,14 @@ local function newFrame(kind, parent)
     end
     return frame
 end
+
+function UIDropDownMenu_SetWidth() end
+function UIDropDownMenu_SetText() end
+function UIDropDownMenu_Initialize() end
+function UIDropDownMenu_CreateInfo() return {} end
+function UIDropDownMenu_AddButton() end
+function UIDropDownMenu_EnableDropDown(dd) dd.enabled = true end
+function UIDropDownMenu_DisableDropDown(dd) dd.enabled = false end
 
 CreateFrame = function(kind, _, parent)
     local frame = newFrame(kind, parent)
@@ -387,5 +411,37 @@ listedRows:Toggle({ label = "Above the list", checked = false })
 listedRows:Fill()
 listed:Finalize()
 assert(listedRows:AutoScroll() == false, "a group that called Fill is left alone")
+
+-------------------------------------------------------------------------------
+-- Clearing a parent locks its grandchildren too, not just the row below it.
+-------------------------------------------------------------------------------
+local nested = LuckySettings:NewRichPanel("Nested Addon", {})
+local nestedRows = nested:Group("Nested")
+nestedRows:Toggle({ label = "Feature", checked = true })
+nestedRows:Toggle({ label = "Keep in keys", checked = true, parent = "Feature" })
+nestedRows:Slider({ label = "Minimum key", min = 2, max = 10, value = 10, parent = "Keep in keys" })
+nestedRows:MultiSelect({
+    label     = "Difficulties",
+    parent    = "Keep in keys",
+    options   = { { key = "heroic", label = "Heroic" } },
+    isChecked = function() return true end,
+})
+nested:Finalize()
+
+local feature  = findSetting(nestedRows, "Feature").checkbox
+local minKey   = findSetting(nestedRows, "Minimum key").slider
+local diffs    = findSetting(nestedRows, "Difficulties").dropdown
+
+assert(minKey.enabled ~= false, "a grandchild under two ticked parents starts unlocked")
+
+feature:SetChecked(false)
+feature.scripts.OnClick(feature)
+assert(minKey.enabled == false, "clearing the grandparent locks the slider under it")
+assert(diffs.enabled == false, "and the dropdown beside it")
+
+feature:SetChecked(true)
+feature.scripts.OnClick(feature)
+assert(minKey.enabled == true, "ticking it back unlocks them again")
+assert(diffs.enabled == true, "both of them")
 
 print("LuckyRichSettings tests passed")
