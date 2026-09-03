@@ -7,8 +7,13 @@
 --   LuckySettings:NewRichPanel("My Addon", {
 --       addonFolder = "MyAddon_Folder",  -- image paths, and the version shown by the title
 --       imagesRoot  = "images",          -- subfolder under the addon
+--       db          = db,                -- store for rows that name a `key`
 --   }, function(panel)
 --       panel:Group("General", function(g)   -- opts table may sit between name and lambda
+--           g:Toggle{ S.foo, key = "foo" }   -- strings table first: label, desc, note, warning, suffix
+--           g:Toggle{ S.bar, key = "bar", parent = S.foo,
+--                     onToggle = function(v) MyAddon.Bar:Apply() end }  -- runs after the write
+--           g:MultiSelect{ S.raids, keys = { lfr = "logLFR", normal = "logNormal" }, options = ... }
 --           g:Toggle{ label = "...", desc = "...",
 --                     checked = function() return db.foo end,
 --                     onToggle = function(v) db.foo = v end }
@@ -19,6 +24,7 @@
 --                     newLine = true }  -- dropdown below the label, not beside it
 --           g:Button{ label = "Configure…", parent = "Some Toggle", onClick = ... }
 --       end)
+--       panel:Group("Per character", { db = charDB }, function(g) ... end)  -- group store wins
 --   end)
 -- Toggle `checked`, Slider `value` and Select `value` accept a plain value or a
 -- zero-arg function. Function-valued state is re-read every time the panel opens,
