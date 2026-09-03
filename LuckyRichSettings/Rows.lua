@@ -28,6 +28,49 @@ local function resolveValue(v)
     return v
 end
 
+local STRING_FIELDS = { "label", "desc", "note", "warning", "suffix", "tooltip", "placeholder" }
+
+-- Row sugar shared by the builders. `opts[1]` is a strings table whose fields
+-- fill any the row did not name itself, so `g:Toggle{ S.autoRepair, ... }`
+-- carries its label, desc and note. `parent` may be that same strings table.
+-- `key` binds the row to its own `db`, else the group's, else the panel's: the value becomes
+-- a live read of store[key], the change handler writes it, and a handler the
+-- row named runs afterwards. Without a store, `key` keeps its old meaning as a
+-- frame-name suffix, so older consumers are unaffected.
+local function prepareRow(group, opts, valueField, changeField)
+    local strings = opts[1]
+    if strings ~= nil then
+        assert(type(strings) == "table" and type(strings.label) == "string",
+            "settings row: the strings table needs a string label")
+        for _, field in ipairs(STRING_FIELDS) do
+            if opts[field] == nil then opts[field] = strings[field] end
+        end
+    end
+    assert(type(opts.label) == "string",
+        "settings row: label is required" .. (opts.key and (" (key " .. tostring(opts.key) .. ")") or ""))
+    if type(opts.parent) == "table" then opts.parent = opts.parent.label end
+
+    local store = opts.db or group.db or group.panel.db
+    if not store then return end
+
+    if opts.key and valueField then
+        local key, after = opts.key, opts[changeField]
+        opts[valueField] = function() return store[key] end
+        opts[changeField] = function(v)
+            store[key] = v
+            if after then after(v) end
+        end
+    end
+    if opts.keys then
+        local keys, after = opts.keys, opts.onToggle
+        opts.isChecked = function(k) return store[keys[k]] end
+        opts.onToggle = function(k, checked)
+            store[keys[k]] = checked
+            if after then after(k, checked) end
+        end
+    end
+end
+
 local function makeNewBadge(parent, anchor)
     local f = CreateFrame("Frame", nil, parent)
     local txt = f:CreateFontString(nil, "OVERLAY")
@@ -263,6 +306,7 @@ local function indentForOpts(opts)
 end
 
 function RichGroup:Toggle(opts)
+    prepareRow(self, opts, "checked", "onToggle")
     local row, hl = makeRow(self, opts, 32)
     local indent = indentForOpts(opts)
 
@@ -330,6 +374,7 @@ function RichGroup:Toggle(opts)
 end
 
 function RichGroup:Slider(opts)
+    prepareRow(self, opts, "value", "onChanged")
     local row, hl = makeRow(self, opts, 44)
     local indent = indentForOpts(opts)
 
@@ -413,8 +458,10 @@ end
 --   isChecked function(key)  returns boolean for current state
 --   onToggle  function(key, checked)
 --   summarize function(checkedLabels[])?  returns the dropdown summary text
+--   keys      table?          { optionKey = storeField }, binds each option to the store
 --
 function RichGroup:MultiSelect(opts)
+    prepareRow(self, opts)
     local row, hl = makeRow(self, opts, 32)
     local indent = indentForOpts(opts)
 
@@ -502,6 +549,7 @@ end
 -- has taken its share of the width.
 
 function RichGroup:Select(opts)
+    prepareRow(self, opts, "value", "onSelect")
     local row, hl = makeRow(self, opts, opts.newLine and 48 or 32)
     local indent = indentForOpts(opts)
 
@@ -581,6 +629,7 @@ function RichGroup:Select(opts)
 end
 
 function RichGroup:Button(opts)
+    prepareRow(self, opts)
     local row, hl = makeRow(self, opts, 32)
     local indent = indentForOpts(opts)
 

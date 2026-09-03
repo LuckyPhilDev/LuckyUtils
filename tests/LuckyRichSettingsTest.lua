@@ -497,4 +497,71 @@ mode = "safe"
 findSetting(gradedRows, "What happens").refreshSelect()
 assert(sameColour(warnColour("What happens"), R.caution), "and going back turns it amber again")
 
+-------------------------------------------------------------------------------
+-- Rows bound to a store: a strings table fills the text, `key` reads and
+-- writes db[key], and a handler the row named runs after the write.
+-------------------------------------------------------------------------------
+local store = { repair = true, timer = 5, pick = "b", lfr = false, normal = true }
+local charStore = { dismiss = true }
+local S = {
+    repair = { label = "Auto Repair", desc = "Repairs.", note = "A note." },
+    guild  = { label = "Guild Funds", desc = "Pays." },
+    timer  = { label = "Timer", desc = "Seconds.", suffix = "s" },
+    pick   = { label = "Pick", desc = "One of." },
+    raids  = { label = "Raids", desc = "Which." },
+    dismiss = { label = "Dismiss", desc = "Per character." },
+}
+local applied = {}
+local bound = LuckySettings:NewRichPanel("Bound", { db = store })
+local rows = bound:Group("Rows")
+rows:Toggle{ S.repair, key = "repair", onToggle = function(v) applied[#applied + 1] = v end }
+rows:Toggle{ S.guild, key = "guild", parent = S.repair }
+rows:Slider{ S.timer, key = "timer", min = 1, max = 10 }
+rows:Select{ S.pick, key = "pick", options = { { key = "a", label = "A" }, { key = "b", label = "B" } } }
+rows:MultiSelect{ S.raids, keys = { lfr = "lfr", normal = "normal" },
+    options = { { key = "lfr", label = "LFR" }, { key = "normal", label = "Normal" } } }
+local perChar = bound:Group("Per character", { db = charStore })
+perChar:Toggle{ S.dismiss, key = "dismiss" }
+bound:Finalize()
+
+local repair = findSetting(rows, "Auto Repair")
+assert(repair, "the strings table supplied the label")
+assert(repair.desc == "Repairs." and repair.note == "A note.", "and the desc and note")
+assert(repair.checkbox.checked == true, "checked is read from the store")
+assert(findSetting(rows, "Guild Funds").parentSetting == repair, "a strings table names a parent")
+assert(findSetting(rows, "Timer").suffix == "s", "a slider takes its suffix from the strings table")
+
+repair.checkbox.checked = false
+repair.checkbox.scripts.OnClick(repair.checkbox)
+assert(store.repair == false, "toggling writes the store")
+assert(applied[1] == false, "and then runs the row's own handler")
+
+store.repair = true
+bound.canvas.scripts.OnShow()
+assert(repair.checkbox.checked == true, "reopening re-reads the store")
+
+findSetting(rows, "Timer").slider:SetValue(8)
+assert(store.timer == 8, "a slider writes the store")
+
+local pick = findSetting(rows, "Pick")
+assert(pick.dropdown.text == "B", "a select reads the store")
+openMenu(pick.dropdown)[1].func()
+assert(store.pick == "a", "and writes it")
+
+assert(findSetting(perChar, "Dismiss").checkbox.checked == true, "a group's own store wins over the panel's")
+local ownStore = { solo = true }
+rows:Toggle{ label = "Solo", key = "solo", db = ownStore }
+assert(findSetting(rows, "Solo").checkbox.checked == true, "a row's own store wins over the group's")
+
+local ok, err = pcall(function() rows:Toggle{ key = "typo" } end)
+assert(not ok and err:find("typo"), "a row with no label fails naming its key")
+ok = pcall(function() rows:Toggle{ nil, key = "repair" } end)
+assert(not ok, "a nil strings table (a typo in S) fails at build")
+
+-- Without a store, `key` is only the slider's frame-name suffix, as before.
+local unbound = LuckySettings:NewRichPanel("Unbound", {})
+local free = unbound:Group("Free")
+free:Slider{ label = "Delay", key = "Delay", min = 0, max = 5, value = 2 }
+assert(findSetting(free, "Delay").slider.value == 2, "an unbound slider keeps its plain value")
+
 print("LuckyRichSettings tests passed")

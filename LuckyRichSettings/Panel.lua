@@ -119,6 +119,7 @@ end
 --- Add a navigation group. `contents(group)` is optional and builds the rows
 --- lazily, the first time the group is activated while the panel is shown.
 --- `opts` may be omitted entirely: Group(name, function(g) ... end).
+--- `opts.db` gives the group its own store for `key` rows (a per-character DB).
 function RichBuilder:Group(name, opts, contents)
     if type(opts) == "function" then
         contents, opts = opts, nil
@@ -149,6 +150,7 @@ function RichBuilder:Group(name, opts, contents)
         content    = content,
         heading    = rule, -- rows anchor below the rule
         showAbout  = self.about and opts.showAbout ~= false,
+        db         = opts.db,
         settings   = {},
         byLabel    = {},
         _contents  = contents,
@@ -360,6 +362,7 @@ end
 --- argument, and Finalize() is called automatically afterwards.
 ---@param displayName string
 ---@param opts table?  { addonFolder?: string, imagesRoot?: string, showAbout?: boolean, version?: string,
+---                      db?: table,  -- store that rows naming a `key` read and write
 ---                      devMode?: table, minimapButton?: table }  -- title bar toggles: { checked, onToggle, label?, desc? }
 ---@param contents fun(panel: table)?  builds the groups and rows lazily
 ---@return table builder
@@ -454,6 +457,7 @@ function LuckySettings:NewRichPanel(displayName, opts, contents)
     local builder = setmetatable({
         addonFolder    = opts.addonFolder,
         imagesRoot     = opts.imagesRoot,
+        db             = opts.db,
         recentVersions = opts.recentVersions, -- list of versions whose settings get a NEW badge (legacy)
         minVersion     = minVersion,          -- min semver; any `since` >= this gets a NEW badge
         canvas         = canvas,
