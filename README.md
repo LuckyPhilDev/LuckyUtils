@@ -211,8 +211,8 @@ icon:SetScript("OnClick", ToggleMinimapButton)
 local tick = LuckyUI.CreateIconButton(parent, { icon = "check", size = 18 })
 
 -- The shared set, as white line art on transparent, tinted by whatever draws it:
--- check, copy, crosshair, crown, dice, filter, layers, pencil, plus, search,
--- settings, sparkle, target, trash, triangle-alert, x. LuckyIcon(name) gives
+-- check, copy, crosshair, crown, dice, filter, layers, pencil, plus, portal,
+-- search, settings, sparkle, target, trash, triangle-alert, x. LuckyIcon(name) gives
 -- the full texture path for one.
 
 -- Drag-to-move with SavedVariables persistence
