@@ -71,11 +71,11 @@ local function prepareRow(group, opts, valueField, changeField)
     end
 end
 
-local function makeNewBadge(parent, anchor)
+local function makeBadge(parent, anchor, text, color)
     local f = CreateFrame("Frame", nil, parent)
     local txt = f:CreateFontString(nil, "OVERLAY")
     txt:SetFont(R_FONT, 11, "")
-    txt:SetText("NEW")
+    txt:SetText(text)
     txt:SetTextColor(0.08, 0.06, 0.02)
     txt:SetPoint("CENTER", 0, 0)
     local w = math.ceil(txt:GetStringWidth()) + 12
@@ -83,8 +83,21 @@ local function makeNewBadge(parent, anchor)
     f:SetPoint("LEFT", anchor, "RIGHT", 8, 0)
     local bg = f:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(R.accentLight[1], R.accentLight[2], R.accentLight[3], 1)
+    bg:SetColorTexture(color[1], color[2], color[3], 1)
     return f
+end
+
+-- NEW marks a setting added recently, WIP one still being built. A row can
+-- carry both, so each badge anchors to whatever went before it.
+local function makeBadges(panel, row, anchor, opts)
+    local last = anchor
+    if isVersionRecent(panel, opts.since) then
+        last = makeBadge(row, last, S.badgeNew, R.accentLight)
+    end
+    if opts.wip then
+        last = makeBadge(row, last, S.badgeWip, R.wip)
+    end
+    return last
 end
 
 -- ─── Setting rows ─────────────────────────────────────────────────────────────
@@ -321,9 +334,7 @@ function RichGroup:Toggle(opts)
     label:SetTextColor(R.text[1], R.text[2], R.text[3])
     label:SetText(opts.label)
 
-    if isVersionRecent(self.panel, opts.since) then
-        makeNewBadge(row, label)
-    end
+    makeBadges(self.panel, row, label, opts)
 
     local setting = {
         type      = "Toggle",
@@ -384,9 +395,7 @@ function RichGroup:Slider(opts)
     label:SetTextColor(R.text[1], R.text[2], R.text[3])
     label:SetText(opts.label)
 
-    if isVersionRecent(self.panel, opts.since) then
-        makeNewBadge(row, label)
-    end
+    makeBadges(self.panel, row, label, opts)
 
     local initialValue = resolveValue(opts.value)
 
@@ -571,9 +580,7 @@ function RichGroup:Select(opts)
         dd:SetPoint("RIGHT", -14, 0)
     end
 
-    if isVersionRecent(self.panel, opts.since) then
-        makeNewBadge(row, label)
-    end
+    makeBadges(self.panel, row, label, opts)
 
     local function labelFor(key)
         for _, o in ipairs(opts.options) do
@@ -639,9 +646,7 @@ function RichGroup:Button(opts)
     btn:SetText(opts.label)
     btn:SetScript("OnClick", function() if opts.onClick then opts.onClick() end end)
 
-    if isVersionRecent(self.panel, opts.since) then
-        makeNewBadge(row, btn)
-    end
+    makeBadges(self.panel, row, btn, opts)
 
     local setting = {
         type      = "Button",
