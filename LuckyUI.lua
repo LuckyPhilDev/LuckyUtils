@@ -309,6 +309,77 @@ function LuckyUI.EnableDrag(frame, opts)
     frame:RestorePosition()
 end
 
+local AUTOHIDE_BAR_H = 3
+local AUTOHIDE_FADE = 0.75
+
+--- Hide the frame `seconds` after StartAutoHide, counting the wait down as a
+--- bar draining right to left along its foot and fading the frame out over the
+--- last moment rather than snatching it away. The mouse reaching the frame puts
+--- the wait back to full and holds it there, so something being read is never
+--- taken away mid-sentence and looking away gives the whole wait again. Stamps
+--- StartAutoHide and StopAutoHide on the frame; one that is never started keeps
+--- no bar and no OnUpdate.
+function LuckyUI.EnableAutoHide(frame, seconds)
+    if frame.autoHideBar then return frame end
+
+    local bar = frame:CreateTexture(nil, "OVERLAY")
+    bar:SetPoint("BOTTOMLEFT", 1, 1)
+    bar:SetHeight(AUTOHIDE_BAR_H)
+    bar:SetColorTexture(LuckyUI.C.goldAccent[1], LuckyUI.C.goldAccent[2], LuckyUI.C.goldAccent[3], 0.8)
+    bar:Hide()
+    frame.autoHideBar = bar
+    frame.autoHideSeconds = seconds
+
+    -- The wait runs on past zero and into the fade, so the bar empties exactly
+    -- as the frame starts going. Width is measured from the frame every tick
+    -- rather than at attach, so one resized to fit its own text stays right.
+    local function paint(self)
+        local left = math.max(0, self.autoHideLeft)
+        self.autoHideBar:SetWidth(math.max(1, (self:GetWidth() - 2) * left / self.autoHideSeconds))
+        local fading = self.autoHideLeft < 0 and (1 + self.autoHideLeft / AUTOHIDE_FADE) or 1
+        self:SetAlpha(self.autoHideAlpha * fading)
+    end
+
+    local function tick(self, elapsed)
+        self.autoHideLeft = self.autoHideLeft - elapsed
+        if self.autoHideLeft <= -AUTOHIDE_FADE then
+            self:StopAutoHide()
+            self:Hide()
+            return
+        end
+        paint(self)
+    end
+
+    function frame:StartAutoHide(override)
+        self.autoHideSeconds = override or self.autoHideSeconds
+        self.autoHideLeft = self.autoHideSeconds
+        self.autoHideAlpha = self.autoHideAlpha or self:GetAlpha()
+        self.autoHideBar:Show()
+        paint(self)
+        self:SetScript("OnUpdate", tick)
+    end
+
+    function frame:StopAutoHide()
+        self.autoHideLeft = nil
+        self.autoHideBar:Hide()
+        self:SetScript("OnUpdate", nil)
+        if self.autoHideAlpha then self:SetAlpha(self.autoHideAlpha) end
+    end
+
+    frame:HookScript("OnEnter", function(self)
+        self:SetScript("OnUpdate", nil)
+        if self.autoHideLeft then
+            self.autoHideLeft = self.autoHideSeconds
+            paint(self)
+        end
+    end)
+    frame:HookScript("OnLeave", function(self)
+        if self.autoHideLeft and self:IsShown() then self:SetScript("OnUpdate", tick) end
+    end)
+
+    return frame
+end
+
 --- Create a horizontal divider with optional label text.
 function LuckyUI.CreateDivider(parent, labelText)
     local d = CreateFrame("Frame", nil, parent)
