@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Added
+- A rich settings row takes `wip = true` and carries a blue WIP badge beside its label, marking a feature still being built. It sits after the NEW badge where a row has both, and every row type that already took `since` takes it. `VersionGate` MINOR is 16.
+
 ## [1.17.0] - 2026-09-03
 
 ### Added
