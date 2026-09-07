@@ -314,11 +314,11 @@ local AUTOHIDE_FADE = 0.75
 
 --- Hide the frame `seconds` after StartAutoHide, counting the wait down as a
 --- bar draining right to left along its foot and fading the frame out over the
---- last moment rather than snatching it away. The mouse reaching the frame puts
---- the wait back to full and holds it there, so something being read is never
---- taken away mid-sentence and looking away gives the whole wait again. Stamps
---- StartAutoHide and StopAutoHide on the frame; one that is never started keeps
---- no bar and no OnUpdate.
+--- last moment rather than snatching it away. The mouse over the frame or over
+--- anything inside it puts the wait back to full and holds it there, so
+--- something being read is never taken away mid-sentence and looking away gives
+--- the whole wait again. Stamps StartAutoHide and StopAutoHide on the frame; one
+--- that is never started keeps no bar and no OnUpdate.
 function LuckyUI.EnableAutoHide(frame, seconds)
     if frame.autoHideBar then return frame end
 
@@ -340,7 +340,16 @@ function LuckyUI.EnableAutoHide(frame, seconds)
         self:SetAlpha(self.autoHideAlpha * fading)
     end
 
+    -- The mouse is asked for each tick rather than hooked on OnEnter and OnLeave,
+    -- because a mouse-enabled child takes the mouse off its parent: a cursor resting
+    -- on a button inside the frame would read as having left the frame entirely.
     local function tick(self, elapsed)
+        if self:IsMouseOver() then
+            self.autoHideLeft = self.autoHideSeconds
+            paint(self)
+            return
+        end
+
         self.autoHideLeft = self.autoHideLeft - elapsed
         if self.autoHideLeft <= -AUTOHIDE_FADE then
             self:StopAutoHide()
@@ -365,17 +374,6 @@ function LuckyUI.EnableAutoHide(frame, seconds)
         self:SetScript("OnUpdate", nil)
         if self.autoHideAlpha then self:SetAlpha(self.autoHideAlpha) end
     end
-
-    frame:HookScript("OnEnter", function(self)
-        self:SetScript("OnUpdate", nil)
-        if self.autoHideLeft then
-            self.autoHideLeft = self.autoHideSeconds
-            paint(self)
-        end
-    end)
-    frame:HookScript("OnLeave", function(self)
-        if self.autoHideLeft and self:IsShown() then self:SetScript("OnUpdate", tick) end
-    end)
 
     return frame
 end

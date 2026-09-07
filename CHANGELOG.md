@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Fixed
+- `LuckyUI.EnableAutoHide` asks the frame for the mouse each tick instead of hooking `OnEnter` and `OnLeave`. A mouse-enabled child takes the mouse off its parent, so a cursor resting on a button inside the frame used to read as having left it and the frame hid underneath. `OnEnter` and `OnLeave` are no longer touched; `OnUpdate` is still taken over.
+
 ## [1.18.0] - 2026-09-06
 
 ### Added

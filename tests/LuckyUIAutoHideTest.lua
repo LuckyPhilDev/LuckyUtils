@@ -9,6 +9,7 @@ function GetLocale() return "enUS" end
 -- Hide, width and script storage, everything else a no-op.
 local function newFrame(width)
     local frame = { width = width, shown = true, alpha = 1, scripts = {}, textures = {} }
+    function frame:IsMouseOver() return self.mouseOver end
     function frame:GetWidth() return self.width end
     function frame:SetWidth(w) self.width = w end
     function frame:GetAlpha() return self.alpha end
@@ -18,13 +19,6 @@ local function newFrame(width)
     function frame:Hide() self.shown = false end
     function frame:SetScript(name, fn) self.scripts[name] = fn end
     function frame:GetScript(name) return self.scripts[name] end
-    function frame:HookScript(name, fn)
-        local prior = self.scripts[name]
-        self.scripts[name] = function(...)
-            if prior then prior(...) end
-            fn(...)
-        end
-    end
     function frame:CreateTexture()
         local t = { shown = false }
         function t:SetPoint() end
@@ -93,11 +87,13 @@ f:StartAutoHide()
 f:Fire("OnUpdate", 4)
 check(f.autoHideBar.width, 60, "six seconds left")
 
-f:Fire("OnEnter")
-check(f:GetScript("OnUpdate"), nil, "the mouse stops the clock")
-check(f.autoHideBar.width, 100, "and winds it back to full")
+f.mouseOver = true
+f:Fire("OnUpdate", 1)
+check(f.autoHideBar.width, 100, "the mouse winds the wait back to full")
+f:Fire("OnUpdate", 1)
+check(f.autoHideBar.width, 100, "and holds it there")
 
-f:Fire("OnLeave")
+f.mouseOver = false
 f:Fire("OnUpdate", 1)
 check(f.autoHideBar.width, 90, "so leaving gives the whole wait again")
 
@@ -105,15 +101,16 @@ check(f.autoHideBar.width, 90, "so leaving gives the whole wait again")
 f:Fire("OnUpdate", 9.3)
 check(f.shown, true, "still there, part faded")
 check(f.alpha < 1, true, "and visibly on its way out")
-f:Fire("OnEnter")
+f.mouseOver = true
+f:Fire("OnUpdate", 0.1)
 check(f.alpha, 1, "the mouse brings it back to full")
 check(f.autoHideBar.width, 100, "with the whole wait to run again")
+f.mouseOver = false
 
 -- A frame stopped by hand stays put ------------------------------------------
 f:StopAutoHide()
 check(f.autoHideBar.shown, false, "stopping clears the bar")
-f:Fire("OnLeave")
-check(f:GetScript("OnUpdate"), nil, "and hovering off cannot restart it")
+check(f:GetScript("OnUpdate"), nil, "and stops the clock")
 check(f.shown, true, "the frame stays up")
 
 -- A frame that resizes keeps a bar its own width -----------------------------
