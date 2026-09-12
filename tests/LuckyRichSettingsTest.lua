@@ -1,4 +1,4 @@
--- luacheck: globals CreateFrame LuckySettings LuckyUI C_AddOns
+-- luacheck: globals CreateFrame LuckySettings LuckyUI C_AddOns RunNextFrame
 
 -- Covers where LuckyRichSettings puts rows: the What's New list folds into the
 -- first group as a scrolling region, and that region has to end above the
@@ -103,6 +103,14 @@ function UIDropDownMenu_AddButton() end
 function UIDropDownMenu_EnableDropDown(dd) dd.enabled = true end
 function UIDropDownMenu_DisableDropDown(dd) dd.enabled = false end
 
+local nextFrame = {}
+function RunNextFrame(fn) table.insert(nextFrame, fn) end
+local function runNextFrame()
+    local queued = nextFrame
+    nextFrame = {}
+    for _, fn in ipairs(queued) do fn() end
+end
+
 CreateFrame = function(kind, _, parent)
     local frame = newFrame(kind, parent)
     if parent and parent.children then table.insert(parent.children, frame) end
@@ -198,11 +206,15 @@ assert(general.rowParent == nil, "the scroll region closed, so later rows flow n
 local scroll = scrollChild.parent
 scroll:SetHeight(200)
 scroll.scripts.OnScrollRangeChanged(scroll)
+runNextFrame()
 assert(scroll.ScrollBar.shown == false, "a list that fits shows no scrollbar")
 assert(scroll.points.BOTTOMRIGHT.rel == 0, "and the rows take back the scrollbar's width")
 
+-- Re-anchoring inside the callback is what left an overflowing group blank.
 scroll:SetHeight(20)
 scroll.scripts.OnScrollRangeChanged(scroll)
+assert(scroll.points.BOTTOMRIGHT.rel == 0, "the region is not re-anchored inside a layout callback")
+runNextFrame()
 assert(scroll.ScrollBar.shown == true, "a list that overflows shows the scrollbar")
 assert(scroll.points.BOTTOMRIGHT.rel == -22, "and the rows make room for it")
 

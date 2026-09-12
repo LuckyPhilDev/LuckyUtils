@@ -1062,14 +1062,18 @@ local function makeScrollRegion(holder)
 
     -- Both fire: the size once the anchors resolve, the range once the child is
     -- filled. Whichever lands first with real numbers settles the bar, and the
-    -- stored state keeps the other from re-anchoring for the same answer.
-    scroll:HookScript("OnSizeChanged", function(self, w)
+    -- stored state keeps the other from re-anchoring for the same answer. It
+    -- waits a frame because re-anchoring the scroll frame from inside its own
+    -- layout callbacks leaves the scroll child with no position, so a group that
+    -- overflows draws none of its rows.
+    local function settleNextFrame()
+        RunNextFrame(function() updateScrollbar(scroll, inner) end)
+    end
+    scroll:HookScript("OnSizeChanged", function(_, w)
         inner:SetWidth(w)
-        updateScrollbar(self, inner)
+        settleNextFrame()
     end)
-    scroll:HookScript("OnScrollRangeChanged", function(self)
-        updateScrollbar(self, inner)
-    end)
+    scroll:HookScript("OnScrollRangeChanged", settleNextFrame)
 
     -- The template starts with the bar showing. Settling it now on an empty
     -- child means a region nothing ever fires for is left without a bar rather
