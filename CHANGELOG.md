@@ -1,7 +1,7 @@
-## [Unreleased]
+## [1.18.2] - 2026-09-12
 
 ### Fixed
-- A rich settings group whose rows outgrow the panel draws them again, rather than a scrollbar over an empty page. The scrollbar re-anchored the scroll frame from inside its own layout callbacks, which left the scroll child with no position; it now settles a frame later.
+- A rich settings group whose rows outgrow the panel draws them again, rather than a scrollbar over an empty page. The scrollbar re-anchored the scroll frame from inside its own layout callbacks, which left the scroll child with no position; it now settles a frame later. `VersionGate` MINOR is 18.
 
 ## [1.18.1] - 2026-09-07
 
