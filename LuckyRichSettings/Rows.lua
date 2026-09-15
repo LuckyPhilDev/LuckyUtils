@@ -569,6 +569,8 @@ function RichGroup:Select(opts)
 
     local dd = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
     dd:SetWidth(opts.width or 220)
+    -- The template's font casts a black shadow that smears through the letters.
+    dd.Text:SetShadowColor(0, 0, 0, 0)
 
     if opts.newLine then
         -- Right-aligned on the line below the label, sharing an edge with the

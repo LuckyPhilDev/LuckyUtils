@@ -91,6 +91,7 @@ local function newFrame(kind, parent)
     elseif kind == "DropdownButton" then
         frame.SetupMenu       = function(self, fn) self.menu = fn end
         frame.SetDefaultText  = function(self, text) self.text = text end
+        frame.Text            = newText()
     end
     return frame
 end
