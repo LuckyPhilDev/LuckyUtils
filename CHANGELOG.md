@@ -1,3 +1,8 @@
+## [1.18.3] - 2026-09-15
+
+### Fixed
+- A rich settings `Select` dropdown no longer draws a black shadow smeared through its text. `VersionGate` MINOR is 19.
+
 ## [1.18.2] - 2026-09-12
 
 ### Fixed
