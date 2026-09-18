@@ -22,4 +22,5 @@
     <Script file="LuckyMinimap.lua"/>
     <Script file="LuckySound.lua"/>
     <Script file="LuckyRoster.lua"/>
+    <Script file="LuckyBankRun.lua"/>
 </Ui>

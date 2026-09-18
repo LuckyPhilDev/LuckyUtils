@@ -85,10 +85,10 @@ end
 -- loaded in the same addon, is still on its own. Hook into the loader if that
 -- ever shows up in a report.
 local PUBLISHED = {
-    "LuckyBankQueue", "LuckyBugs", "LuckyDB", "LuckyDeps", "LuckyIcon",
-    "LuckyItem", "LuckyLog", "LuckyMedia", "LuckyMinimap", "LuckyProfiles",
-    "LuckyPromo", "LuckyRoster", "LuckySettings", "LuckySound", "LuckyStrings",
-    "LuckyUI", "LuckyUtils", "LuckyUtilsStrings",
+    "LuckyBankQueue", "LuckyBankRun", "LuckyBugs", "LuckyDB", "LuckyDeps",
+    "LuckyIcon", "LuckyItem", "LuckyLog", "LuckyMedia", "LuckyMinimap",
+    "LuckyProfiles", "LuckyPromo", "LuckyRoster", "LuckySettings", "LuckySound",
+    "LuckyStrings", "LuckyUI", "LuckyUtils", "LuckyUtilsStrings",
 }
 
 lib.published = lib.published or {}

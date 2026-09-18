@@ -27,6 +27,7 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 - **LuckyUtils** — general utilities: recursive SavedVariables initialisation and canonical `Name-Realm` character keys.
 - **LuckyDB**: transactional, sequential SavedVariables migrations with recursive defaults and schema version checks.
 - **LuckyBankQueue**: sequential container transfers with lock polling, cursor recovery, partial-stack support, and destination retries.
+- **LuckyBankRun**: runs every Lucky addon's bank jobs one at a time and lists the items still to move in a window beside the bank.
 
 ---
 
@@ -53,7 +54,7 @@ Libs\LuckysUtils\embeds.xml
 YourFirstFile.lua
 ```
 
-Every copy registers `LuckysUtils-1.0` with LibStub and only one copy's files run. The highest `MINOR` wins; where two copies tie, an embedded copy takes the registration from the standalone addon, and otherwise the first loaded keeps it. A copy from before the gate replaces the published tables instead of merging into them; the winner remembers what it published and restores it as later addons load, so one of those cannot strip the API out from under a consumer. The winner publishes the same globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyStrings`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBugs`, plus `LuckyMedia(fileName)` and `LuckyIcon(name)` for paths into the library Media folder), available once the library has loaded, whichever addon carried it. To see which copy won in-game: `/dump LibStub.minors["LuckysUtils-1.0"]`, and `/dump LuckysUtilsHosts` for every copy that loaded.
+Every copy registers `LuckysUtils-1.0` with LibStub and only one copy's files run. The highest `MINOR` wins; where two copies tie, an embedded copy takes the registration from the standalone addon, and otherwise the first loaded keeps it. A copy from before the gate replaces the published tables instead of merging into them; the winner remembers what it published and restores it as later addons load, so one of those cannot strip the API out from under a consumer. The winner publishes the same globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyStrings`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBankRun`, `LuckyBugs`, plus `LuckyMedia(fileName)` and `LuckyIcon(name)` for paths into the library Media folder), available once the library has loaded, whichever addon carried it. To see which copy won in-game: `/dump LibStub.minors["LuckysUtils-1.0"]`, and `/dump LuckysUtilsHosts` for every copy that loaded.
 
 Where an embedded copy is loaded and no installed addon lists `Luckys_Utils` as a required dependency, a panel tells the player once that the standalone addon can be uninstalled.
 
@@ -157,6 +158,26 @@ end)
 ```
 
 `findDestination(itemID, excluded, step)` returns a bag and slot. The queue waits for locked slots, skips incompatible slots, retries when a partial merge leaves an item on the cursor, restores the cursor item to its source on failure, and reports stable error codes through `onError`. Use `GetPendingCount()`, `IsRunning()`, and `Cancel()` to inspect or stop a queue.
+
+---
+
+### LuckyBankRun
+
+Every addon that moves items at the bank hands its work to one shared run, so two addons never pick items up at the same time. A job is a plan and a run: the plan says what will move, the run moves it, ticking each move off and saying when it is done.
+
+```lua
+LuckyBankRun:OnBankOpen(20, {
+    direction = "deposit",                            -- or "withdraw"; drawn as an arrow on each row
+    plan = function() return PlanDeposits() end,     -- { { itemID = n }, ... } in run order
+    run  = function(job, moves)
+        DepositAll(moves, function() job:Tick() end, function() job:Done() end)
+    end,
+})
+```
+
+Jobs registered with `OnBankOpen(order, job)` run every time the bank opens, lowest order first; deposits take lower numbers than withdrawals so the bags have room. Orders in use: Grab-bag whitelist and lumber 10, Grab-bag reagents 15, Stockist warbound gear 20, Stockist excess deposit 30, Grab-bag treatises 40, Stockist restock 50, Stockist bank sort 90. Keep every deposit below every withdrawal. Every job is planned before the first one runs, so the window lists the whole run from the start; a run must re-check the bags and bank as it goes, since the jobs before it move things. `Queue(job)` plans and runs a one-off job, such as a slash command, after whatever is already running. A run must call `job:Done()` exactly once, including when it has nothing to do. Moves it planned but never ticked count as passed when it finishes. An error inside a plan or a run is reported and the run carries on. Closing the bank drops every job still waiting, and a late `Tick` or `Done` from a dropped job is ignored.
+
+The window beside the bank (Blizzard's or Baganator's) lists the planned items, counts the moves in its title and fills a bar as they finish. `LuckyBankRun:AddSettingsToggle(group, since)` adds the account-wide Hide Bank Queue toggle to a rich settings group; every addon's copy of the toggle shares one flag in `LuckySettingsDB`.
 
 ---
 

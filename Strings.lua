@@ -61,6 +61,20 @@ LuckyUtilsStrings = LuckyStrings.New("LuckyUtilsStrings", {
         },
     },
 
+    bankRun = {
+        title        = "Bank Queue",
+        titleCount   = "Bank Queue %d / %d",
+        more         = "and %d more",
+        done         = "All done",
+        itemFallback = "Item %d",
+        hide         = "Hide Bank Queue",
+        hideTooltip  = "When enabled, the window beside the bank that lists items as they move to and from your Warband Bank stays hidden. Applies to every character and every Lucky addon.",
+        deposit      = "Deposit",
+        depositDesc  = "Moves from your bags into your Warband Bank.",
+        withdrawal   = "Withdrawal",
+        withdrawalDesc = "Moves from your Warband Bank into your bags.",
+    },
+
     bugs = {
         prefix          = "LuckyBugs:",
         unknownAddon    = "A Lucky addon",

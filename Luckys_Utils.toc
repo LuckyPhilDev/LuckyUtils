@@ -29,3 +29,4 @@ LuckyRichSettings\Panel.lua
 LuckyMinimap.lua
 LuckySound.lua
 LuckyRoster.lua
+LuckyBankRun.lua
