@@ -2,6 +2,7 @@
 
 ### Added
 - A rich settings `Select` row takes `disabled = true` and locks the same way a disabled `Toggle` does.
+- Shared icons `play`, `pause`, `square`, `arrow-down-to-line` and `arrow-up-from-line`, from Lucide like the rest of the set.
 - `LuckySettings.Rich.IconTextButton(parent, label, icon)` builds the borderless gold icon-and-label button `ButtonRow` uses, for any frame that wants to match the settings panel. It returns the button and its width.
 - `LuckyDeps:IsEnabled(addonName, minVersion)` takes an optional minimum version, read from the addon's `.toc` so it works before that addon loads.
 
