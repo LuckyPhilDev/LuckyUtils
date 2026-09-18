@@ -12,9 +12,10 @@
 --   LuckyBankRun:OnBankOpen(20, { direction = "deposit", plan = PlanDeposits, run = RunDeposits })
 --
 -- Every bank-open job is planned before any of them runs, so the window lists
--- the whole run from the start and its count never grows. Each job's run
--- re-checks the bags and bank as it goes, since the jobs before it move
--- things. Queue runs a one-off job after whatever is already running.
+-- the whole run from the start and its count never grows. In Manual mode that
+-- list opens with a Start button, and nothing runs until it is pressed. Each
+-- job's run re-checks the bags and bank as it goes, since the jobs before it
+-- move things. Queue runs a one-off job after whatever is already running.
 -- Closing the bank drops everything still waiting; a late Tick or Done from a
 -- job that was dropped is ignored.
 
@@ -32,6 +33,7 @@ local JOB_GAP = 0.25
 local MAX_ROWS = 10
 local ROW_H = 22
 local HEADER_H = 36
+local START_H = 20
 local DONE_LINGER = 3
 
 local DIRECTIONS = {
@@ -51,8 +53,13 @@ Run.pending = Run.pending or {}
 -- across the whole run, for the title count and the bar along the foot.
 Run.progress = Run.progress or { queue = {}, moved = 0, total = 0 }
 
+local function IsManual()
+    return LuckySettingsDB and LuckySettingsDB.bankQueueMode == "manual"
+end
+
+-- Manual mode needs the window for its Start button, so it always shows there.
 local function IsHidden()
-    return LuckySettingsDB and LuckySettingsDB.hideBankQueue == true
+    return not IsManual() and LuckySettingsDB and LuckySettingsDB.hideBankQueue == true
 end
 
 local function ResetProgress()
@@ -75,9 +82,18 @@ local function Frame()
     f.progressBar:SetPoint("BOTTOMLEFT", 1, 1)
     f.progressBar:SetHeight(3)
     f.progressBar:SetColorTexture(gold[1], gold[2], gold[3], 0.8)
+    f.startButton = LuckySettings.Rich.IconTextButton(f, S.start, "play")
+    f.startButton:SetPoint("TOPLEFT", 10, -(HEADER_H + 4))
+    f.startButton:SetScript("OnClick", function() Run:StartBankJobs() end)
+    f.startButton:Hide()
     f.rows = {}
     Run.frame = f
     return f
+end
+
+-- The rows sit under the Start button while it shows.
+local function RowsTop(f)
+    return HEADER_H + (f.startButton:IsShown() and (START_H + 8) or 0)
 end
 
 -- The rows move up under a still mouse as items finish, so a row redrawn
@@ -134,7 +150,7 @@ local function SetRow(f, i, itemID, text, direction)
         row.name:SetJustifyH("LEFT")
         f.rows[i] = row
     end
-    row:SetPoint("TOPLEFT", 10, -HEADER_H - (i - 1) * ROW_H)
+    row:SetPoint("TOPLEFT", 10, -RowsTop(f) - (i - 1) * ROW_H)
     row.itemID, row.directionKey = itemID, direction
     row.direction:SetTexture(DIRECTIONS[direction] and LuckyIcon(DIRECTIONS[direction].icon))
     row.icon:SetTexture(itemID and (C_Item.GetItemIconByID(itemID) or 134400))
@@ -168,11 +184,13 @@ end
 
 local function ShowRows(f, count)
     for i, row in ipairs(f.rows) do row:SetShown(i <= count) end
-    f:SetHeight(HEADER_H + count * ROW_H + 10)
+    f:SetHeight(RowsTop(f) + count * ROW_H + 10)
     AnchorToBank(f)
     f:Show()
 end
 
+-- Draws the queue. In Manual mode, before Start, the same list sits under the
+-- Start button as a preview of what the run will move.
 local function Render()
     if IsHidden() then
         if Run.frame then Run.frame:Hide() end
@@ -180,6 +198,7 @@ local function Render()
     end
     local f, p = Frame(), Run.progress
     f:StopAutoHide()
+    f.startButton:SetShown(Run.previewing == true)
     local shown = math.min(#p.queue, MAX_ROWS)
     for i = 1, shown do
         local entry = p.queue[i]
@@ -189,6 +208,9 @@ local function Render()
     if #p.queue > MAX_ROWS then
         shown = shown + 1
         SetRow(f, shown, nil, S.more:format(#p.queue - MAX_ROWS))
+    elseif shown == 0 and Run.previewing then
+        shown = 1
+        SetRow(f, 1, nil, S.nothing)
     end
     ShowRows(f, shown)
     f.titleText:SetText(S.titleCount:format(p.moved, p.total))
@@ -199,6 +221,7 @@ end
 local function ShowDone()
     local f = Run.frame
     if IsHidden() or not (f and f:IsShown()) then return end
+    f.startButton:Hide()
     SetRow(f, 1, nil, S.done)
     ShowRows(f, 1)
     f.titleText:SetText(S.title)
@@ -223,7 +246,8 @@ local function PlanOf(spec)
     return ok and moves or {}
 end
 
--- Consecutive moves of the same item from the same job share a row.
+-- Consecutive moves of the same item from the same job share a row. A preview
+-- has no job yet, so the direction comes with the moves.
 local function AddRows(moves, direction, job)
     local p = Run.progress
     p.total = p.total + #moves
@@ -273,10 +297,24 @@ function Job:Done()
     end)
 end
 
+local function ShowPreview()
+    ResetProgress()
+    for _, entry in ipairs(Run.bankJobs) do AddRows(PlanOf(entry.spec), entry.spec.direction) end
+    Run.previewing = true
+    Render()
+end
+
+-- A run someone started by hand says it finished even when it moved nothing.
+-- In Manual mode a one-off job, such as a slash command, can finish before
+-- Start is pressed; the window then goes back to the preview.
 local function Finish()
     local movedAny = Run.progress.total > 0
     ResetProgress()
-    if movedAny then ShowDone() end
+    if IsManual() and Run.bankOpen and not Run.started then
+        ShowPreview()
+    elseif movedAny or Run.started then
+        ShowDone()
+    end
 end
 
 StartNext = function()
@@ -293,6 +331,10 @@ end
 
 -- Plans a job now and puts it at the back of the line without starting it.
 local function Enqueue(spec)
+    if Run.previewing then
+        Run.previewing = false
+        ResetProgress()
+    end
     local job = setmetatable({}, Job)
     local moves = PlanOf(spec)
     job.planned = #moves > 0
@@ -300,9 +342,11 @@ local function Enqueue(spec)
     table.insert(Run.pending, { spec = spec, job = job, moves = moves })
 end
 
-local function BeginBankRun()
+-- showEmpty draws the window even when nothing is planned, so a run started
+-- by hand replaces the preview rather than leaving it up.
+local function BeginBankRun(showEmpty)
     for _, entry in ipairs(Run.bankJobs) do Enqueue(entry.spec) end
-    if Run.progress.total > 0 then Render() end
+    if Run.progress.total > 0 or showEmpty then Render() end
     StartNext()
 end
 
@@ -313,11 +357,38 @@ function Run:Queue(spec)
     StartNext()
 end
 
---- Run a job every time the bank opens. Lower order runs first; deposits go
---- before withdrawals so the bags have room.
+--- Run a job every time the bank opens, or on Start in Manual mode. Lower
+--- order runs first; deposits go before withdrawals so the bags have room.
 function Run:OnBankOpen(order, spec)
     table.insert(self.bankJobs, { order = order, spec = spec })
     table.sort(self.bankJobs, function(a, b) return a.order < b.order end)
+end
+
+--- Plan and run every bank-open job now. The Start button calls this.
+function Run:StartBankJobs()
+    self.started = true
+    BeginBankRun(true)
+end
+
+--- The Auto or Manual choice, for any Lucky addon's rich settings group. Every
+--- addon's copy reads and writes the same account-wide value. ownedBy names
+--- another installed addon that holds the setting instead; the row then locks
+--- and says where to change it.
+function Run:AddModeSetting(group, opts)
+    opts = opts or {}
+    group:Select({
+        label    = S.mode,
+        desc     = S.modeDesc,
+        note     = opts.ownedBy and S.modeOwned:format(opts.ownedBy),
+        since    = opts.since,
+        disabled = opts.ownedBy ~= nil,
+        options  = { { key = "auto", label = S.modeAuto }, { key = "manual", label = S.modeManual } },
+        value    = function() return IsManual() and "manual" or "auto" end,
+        onSelect = function(key)
+            LuckySettingsDB = LuckySettingsDB or {}
+            LuckySettingsDB.bankQueueMode = key == "manual" and "manual" or nil
+        end,
+    })
 end
 
 --- The Hide Bank Queue toggle, for any Lucky addon's rich settings group. Every
@@ -338,6 +409,8 @@ end
 
 local function OnBankClosed()
     Run.bankOpen = false
+    Run.started = nil
+    Run.previewing = false
     Run.current = nil
     Run.pending = {}
     ResetProgress()
@@ -357,6 +430,10 @@ Run.events:SetScript("OnEvent", function(_, event)
     Run.bankOpen = true
     C_Timer.After(OPEN_DELAY, function()
         if not Run.bankOpen or #Run.bankJobs == 0 then return end
-        BeginBankRun()
+        if IsManual() then
+            ShowPreview()
+        else
+            BeginBankRun()
+        end
     end)
 end)

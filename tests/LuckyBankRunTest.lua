@@ -4,7 +4,7 @@ LuckyBankRun = nil
 LuckysUtilsSkipLoad = nil
 LuckyUtilsStrings = { bankRun = {
     title = "Bank Queue", titleCount = "%d / %d", more = "+%d", done = "All done",
-    itemFallback = "Item %d",
+    nothing = "Nothing to move", itemFallback = "Item %d",
 } }
 LuckyUI = { BODY_FONT = "font", C = { goldAccent = { 1, 1, 1 } } }
 function LuckyIcon(name) return name end
@@ -44,7 +44,8 @@ end
 dofile("LuckyBankRun.lua")
 
 local window = widget()
-window.rows, window.titleText, window.progressBar = {}, widget(), widget()
+window.rows, window.startButton, window.titleText, window.progressBar = {}, widget(), widget(), widget()
+window.startButton.shown = false
 LuckyBankRun.frame = window
 
 local function fire(event)
@@ -130,5 +131,35 @@ events.handler(nil, "BANKFRAME_OPENED")
 events.handler(nil, "BANKFRAME_CLOSED")
 flushTimers()
 check(#log == 0, "a bank closed before the delay plans and runs nothing")
+
+-- Manual mode lists the whole plan under a Start button and runs nothing.
+LuckySettingsDB.bankQueueMode = "manual"
+LuckySettingsDB.hideBankQueue = true
+log = {}
+fire("BANKFRAME_OPENED")
+check(log[1] == "plan deposit" and log[2] == "plan restock" and #log == 2, "manual mode plans but runs nothing")
+check(progress().total == 4 and #progress().queue == 3, "the preview lists every planned item")
+check(progress().queue[1].direction == "deposit" and progress().queue[3].direction == "withdraw",
+    "each preview row carries its job's direction")
+check(window.startButton.shown == true, "manual mode shows Start, even with the window hidden")
+
+-- A slash command before Start runs, then the window goes back to the preview.
+LuckyBankRun:Queue({ plan = function() return moves(7) end, run = function(job) job:Tick(); job:Done() end })
+check(window.startButton.shown == false, "a running job takes the preview's place")
+flushTimers()
+check(window.startButton.shown == true and progress().total == 4, "the preview comes back once that job is done")
+
+log = {}
+LuckyBankRun:StartBankJobs()
+check(log[1] == "plan deposit" and log[3] == "run deposit", "Start plans afresh and runs the first job")
+check(window.startButton.shown == false and progress().total == 4, "the run replaces the preview")
+held.deposit:Done()
+flushTimers()
+held.restock:Done()
+flushTimers()
+check(LuckyBankRun.current == nil and window.shown == true, "a started run ends on All done")
+
+fire("BANKFRAME_CLOSED")
+LuckySettingsDB = {}
 
 print(string.format("%d LuckyBankRun tests passed", passed))

@@ -179,6 +179,8 @@ Jobs registered with `OnBankOpen(order, job)` run every time the bank opens, low
 
 The window beside the bank (Blizzard's or Baganator's) lists the planned items, counts the moves in its title and fills a bar as they finish. `LuckyBankRun:AddSettingsToggle(group, since)` adds the account-wide Hide Bank Queue toggle to a rich settings group; every addon's copy of the toggle shares one flag in `LuckySettingsDB`.
 
+`LuckyBankRun:AddModeSetting(group, { since = ..., ownedBy = ... })` adds the account-wide Auto or Manual choice. In Manual mode the bank-open jobs wait: the window opens listing every planned item under a Start button, which calls `LuckyBankRun:StartBankJobs()`, and the Hide toggle does not apply. Pass `ownedBy` with another installed addon's name to lock that addon's copy of the row and point the player there.
+
 ---
 
 ### LuckyUI
