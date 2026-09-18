@@ -44,8 +44,9 @@ end
 dofile("LuckyBankRun.lua")
 
 local window = widget()
-window.rows, window.startButton, window.titleText, window.progressBar = {}, widget(), widget(), widget()
-window.startButton.shown = false
+window.rows, window.titleText, window.progressBar = {}, widget(), widget()
+window.buttons = { start = widget(), pause = widget(), resume = widget() }
+for _, button in pairs(window.buttons) do button.shown = false end
 LuckyBankRun.frame = window
 
 local function fire(event)
@@ -132,6 +133,48 @@ events.handler(nil, "BANKFRAME_CLOSED")
 flushTimers()
 check(#log == 0, "a bank closed before the delay plans and runs nothing")
 
+-- Pause holds a job before its next move and the next job before it starts;
+-- Resume carries on from there.
+log = {}
+local stepped = 0
+LuckyBankRun:Queue({ plan = function() return moves(1, 2) end, run = function(job)
+    local function step(i)
+        if i > 2 then
+            job:Done()
+            return
+        end
+        stepped = i
+        job:Tick()
+        job:After(0, function() step(i + 1) end)
+    end
+    step(1)
+end })
+LuckyBankRun:Queue(spec("after", moves(3)))
+check(window.buttons.pause.shown == true, "a running job shows Pause")
+LuckyBankRun:Pause()
+check(window.buttons.resume.shown == true and window.buttons.pause.shown == false, "Pause swaps to Resume")
+flushTimers()
+check(stepped == 1, "a paused job holds its next move")
+LuckyBankRun:Resume()
+check(stepped == 2 and window.buttons.pause.shown == true, "Resume makes the held move")
+table.remove(timers, 1)()
+LuckyBankRun:Pause()
+flushTimers()
+check(log[2] == nil, "a paused run holds the next job")
+LuckyBankRun:Resume()
+check(log[2] == "run after", "Resume starts the held job")
+held.after:Done()
+flushTimers()
+check(LuckyBankRun.current == nil and LuckyBankRun.paused == nil, "the run resets once every job is done")
+
+-- A job dropped by closing the bank never makes its next move.
+LuckyBankRun:Queue({ plan = function() return moves(1) end, run = function(job)
+    job:After(0, function() stepped = "dropped" end)
+end })
+events.handler(nil, "BANKFRAME_CLOSED")
+flushTimers()
+check(stepped ~= "dropped", "a dropped job's next move never runs")
+
 -- Manual mode lists the whole plan under a Start button and runs nothing.
 LuckySettingsDB.bankQueueMode = "manual"
 LuckySettingsDB.hideBankQueue = true
@@ -141,18 +184,18 @@ check(log[1] == "plan deposit" and log[2] == "plan restock" and #log == 2, "manu
 check(progress().total == 4 and #progress().queue == 3, "the preview lists every planned item")
 check(progress().queue[1].direction == "deposit" and progress().queue[3].direction == "withdraw",
     "each preview row carries its job's direction")
-check(window.startButton.shown == true, "manual mode shows Start, even with the window hidden")
+check(window.buttons.start.shown == true, "manual mode shows Start, even with the window hidden")
 
 -- A slash command before Start runs, then the window goes back to the preview.
 LuckyBankRun:Queue({ plan = function() return moves(7) end, run = function(job) job:Tick(); job:Done() end })
-check(window.startButton.shown == false, "a running job takes the preview's place")
+check(window.buttons.start.shown == false, "a running job takes the preview's place")
 flushTimers()
-check(window.startButton.shown == true and progress().total == 4, "the preview comes back once that job is done")
+check(window.buttons.start.shown == true and progress().total == 4, "the preview comes back once that job is done")
 
 log = {}
 LuckyBankRun:StartBankJobs()
 check(log[1] == "plan deposit" and log[3] == "run deposit", "Start plans afresh and runs the first job")
-check(window.startButton.shown == false and progress().total == 4, "the run replaces the preview")
+check(window.buttons.start.shown == false and progress().total == 4, "the run replaces the preview")
 held.deposit:Done()
 flushTimers()
 held.restock:Done()

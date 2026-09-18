@@ -6,7 +6,8 @@
 --
 --   plan()           returns its moves, { { itemID = n }, ... } in run order
 --   run(job, moves)  makes them, calling job:Tick() as each finishes and
---                    job:Done() once, at the end, even when there was nothing
+--                    job:Done() once, at the end, even when there was nothing,
+--                    and going on to each next move with job:After
 --   direction        "deposit" or "withdraw", drawn as an arrow on each row
 --
 --   LuckyBankRun:OnBankOpen(20, { direction = "deposit", plan = PlanDeposits, run = RunDeposits })
@@ -16,6 +17,7 @@
 -- list opens with a Start button, and nothing runs until it is pressed. Each
 -- job's run re-checks the bags and bank as it goes, since the jobs before it
 -- move things. Queue runs a one-off job after whatever is already running.
+-- While a run is going, the Start button's place holds Pause, then Resume.
 -- Closing the bank drops everything still waiting; a late Tick or Done from a
 -- job that was dropped is ignored.
 
@@ -82,18 +84,33 @@ local function Frame()
     f.progressBar:SetPoint("BOTTOMLEFT", 1, 1)
     f.progressBar:SetHeight(3)
     f.progressBar:SetColorTexture(gold[1], gold[2], gold[3], 0.8)
-    f.startButton = LuckySettings.Rich.IconTextButton(f, S.start, "play")
-    f.startButton:SetPoint("TOPLEFT", 10, -(HEADER_H + 4))
-    f.startButton:SetScript("OnClick", function() Run:StartBankJobs() end)
-    f.startButton:Hide()
+    local function Button(label, icon, onClick)
+        local button = LuckySettings.Rich.IconTextButton(f, label, icon)
+        button:SetPoint("TOPLEFT", 10, -(HEADER_H + 4))
+        button:SetScript("OnClick", onClick)
+        button:Hide()
+        return button
+    end
+    f.buttons = {
+        start  = Button(S.start, "play", function() Run:StartBankJobs() end),
+        pause  = Button(S.pause, "pause", function() Run:Pause() end),
+        resume = Button(S.resume, "play", function() Run:Resume() end),
+    }
     f.rows = {}
     Run.frame = f
     return f
 end
 
--- The rows sit under the Start button while it shows.
+local function ShowButton(f, name)
+    for key, button in pairs(f.buttons) do button:SetShown(key == name) end
+end
+
+-- The rows sit under the button while one shows.
 local function RowsTop(f)
-    return HEADER_H + (f.startButton:IsShown() and (START_H + 8) or 0)
+    for _, button in pairs(f.buttons) do
+        if button:IsShown() then return HEADER_H + START_H + 8 end
+    end
+    return HEADER_H
 end
 
 -- The rows move up under a still mouse as items finish, so a row redrawn
@@ -189,6 +206,11 @@ local function ShowRows(f, count)
     f:Show()
 end
 
+local function ButtonFor()
+    if Run.previewing then return "start" end
+    if Run.current or Run.pending[1] then return Run.paused and "resume" or "pause" end
+end
+
 -- Draws the queue. In Manual mode, before Start, the same list sits under the
 -- Start button as a preview of what the run will move.
 local function Render()
@@ -198,7 +220,7 @@ local function Render()
     end
     local f, p = Frame(), Run.progress
     f:StopAutoHide()
-    f.startButton:SetShown(Run.previewing == true)
+    ShowButton(f, ButtonFor())
     local shown = math.min(#p.queue, MAX_ROWS)
     for i = 1, shown do
         local entry = p.queue[i]
@@ -221,7 +243,7 @@ end
 local function ShowDone()
     local f = Run.frame
     if IsHidden() or not (f and f:IsShown()) then return end
-    f.startButton:Hide()
+    ShowButton(f, nil)
     SetRow(f, 1, nil, S.done)
     ShowRows(f, 1)
     f.titleText:SetText(S.title)
@@ -273,6 +295,20 @@ function Job:Tick()
     Render()
 end
 
+--- C_Timer.After for the step to the next move. A paused run holds fn until
+--- Resume, and a dropped job's fn never runs. Stepping only through this is
+--- what lets Pause stop a job between moves, never with an item on the cursor.
+function Job:After(delay, fn)
+    C_Timer.After(delay, function()
+        if not IsLive(self) then return end
+        if Run.paused then
+            Run.held = fn
+        else
+            fn()
+        end
+    end)
+end
+
 local StartNext
 
 -- Moves the job planned but never ticked count as passed, so the next job's
@@ -309,6 +345,7 @@ end
 -- Start is pressed; the window then goes back to the preview.
 local function Finish()
     local movedAny = Run.progress.total > 0
+    Run.paused = nil
     ResetProgress()
     if IsManual() and Run.bankOpen and not Run.started then
         ShowPreview()
@@ -318,7 +355,7 @@ local function Finish()
 end
 
 StartNext = function()
-    if Run.current then return end
+    if Run.current or (Run.paused and Run.pending[1]) then return end
     local entry = table.remove(Run.pending, 1)
     if not entry then
         Finish()
@@ -370,6 +407,25 @@ function Run:StartBankJobs()
     BeginBankRun(true)
 end
 
+--- Hold the run before its next move. The Pause button calls this.
+function Run:Pause()
+    self.paused = true
+    Render()
+end
+
+--- Carry on a paused run from where it stopped. The Resume button calls this.
+function Run:Resume()
+    self.paused = nil
+    local held = self.held
+    self.held = nil
+    Render()
+    if held then
+        held()
+    else
+        StartNext()
+    end
+end
+
 --- The Auto or Manual choice, for any Lucky addon's rich settings group. Every
 --- addon's copy reads and writes the same account-wide value. ownedBy names
 --- another installed addon that holds the setting instead; the row then locks
@@ -411,6 +467,8 @@ local function OnBankClosed()
     Run.bankOpen = false
     Run.started = nil
     Run.previewing = false
+    Run.paused = nil
+    Run.held = nil
     Run.current = nil
     Run.pending = {}
     ResetProgress()
