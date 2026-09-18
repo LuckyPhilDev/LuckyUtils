@@ -701,6 +701,58 @@ local ICON_GAP   = 6   -- icon to its own label
 local BUTTON_H   = 20
 local GLOW_ALPHA = 0.35
 
+--- One of those buttons on its own, for any frame that wants to match the
+--- panel. `icon` is optional. Returns the button and its width; the button's
+--- OnEnter and OnLeave paint the hover, so add to them with HookScript.
+local function IconTextButton(parent, label, iconName)
+    local btn = CreateFrame("Button", nil, parent)
+    btn:SetHeight(BUTTON_H)
+
+    local text = btn:CreateFontString(nil, "OVERLAY")
+    text:SetFont(R_FONT, 12, "")
+    text:SetText(label)
+    text:SetPoint("RIGHT")
+
+    local width = math.ceil(text:GetStringWidth())
+    local icon, glow
+    if iconName then
+        local art = LuckyIcon(iconName)
+        icon = btn:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(ICON_SIZE, ICON_SIZE)
+        icon:SetTexture(art)
+        icon:SetPoint("LEFT")
+
+        -- Hover is the icon added over itself rather than anything drawn
+        -- behind it, which is what keeps the button borderless.
+        glow = btn:CreateTexture(nil, "OVERLAY")
+        glow:SetAllPoints(icon)
+        glow:SetTexture(art)
+        glow:SetBlendMode("ADD")
+        glow:SetAlpha(GLOW_ALPHA)
+        glow:Hide()
+
+        width = width + ICON_SIZE + ICON_GAP
+    end
+    btn:SetWidth(width)
+    btn.icon = icon
+
+    local function paint(lit)
+        local c = lit and R.accentLight or R.accent
+        text:SetTextColor(c[1], c[2], c[3])
+        if icon then
+            icon:SetVertexColor(c[1], c[2], c[3])
+            glow:SetVertexColor(c[1], c[2], c[3])
+            glow:SetShown(lit)
+        end
+    end
+    paint(false)
+    btn:SetScript("OnEnter", function() paint(true) end)
+    btn:SetScript("OnLeave", function() paint(false) end)
+    return btn, width
+end
+
+LuckySettings.Rich.IconTextButton = IconTextButton
+
 function RichGroup:ButtonRow(opts)
     local rowHeight = 32
     local row, hl = makeRow(self, opts, rowHeight)
@@ -709,55 +761,13 @@ function RichGroup:ButtonRow(opts)
     local x, firstSetting = indentForOpts(opts), nil
 
     for _, spec in ipairs(opts.buttons) do
-        local btn = CreateFrame("Button", nil, row)
-        btn:SetHeight(BUTTON_H)
+        local btn, width = IconTextButton(row, spec.label, spec.icon)
         btn:SetScript("OnClick", function() if spec.onClick then spec.onClick() end end)
-
-        local text = btn:CreateFontString(nil, "OVERLAY")
-        text:SetFont(R_FONT, 12, "")
-        text:SetText(spec.label)
-        text:SetPoint("RIGHT")
-
-        local width = math.ceil(text:GetStringWidth())
-        local icon, glow
-        if spec.icon then
-            local art = LuckyIcon(spec.icon)
-            icon = btn:CreateTexture(nil, "ARTWORK")
-            icon:SetSize(ICON_SIZE, ICON_SIZE)
-            icon:SetTexture(art)
-            icon:SetPoint("LEFT")
-
-            -- Hover is the icon added over itself rather than anything drawn
-            -- behind it, which is what keeps the button borderless.
-            glow = btn:CreateTexture(nil, "OVERLAY")
-            glow:SetAllPoints(icon)
-            glow:SetTexture(art)
-            glow:SetBlendMode("ADD")
-            glow:SetAlpha(GLOW_ALPHA)
-            glow:Hide()
-
-            width = width + ICON_SIZE + ICON_GAP
-        end
-
-        btn:SetWidth(width)
         btn:SetPoint("LEFT", x, 0)
         -- The gaps are dead space that would otherwise hand the mouse back to the
         -- row, so each button claims its half and the full height of the row.
         btn:SetHitRectInsets(-gap / 2, -gap / 2, -(rowHeight - BUTTON_H) / 2, -(rowHeight - BUTTON_H) / 2)
         x = x + width + gap
-
-        local function paint(lit)
-            local c = lit and R.accentLight or R.accent
-            text:SetTextColor(c[1], c[2], c[3])
-            if icon then
-                icon:SetVertexColor(c[1], c[2], c[3])
-                glow:SetVertexColor(c[1], c[2], c[3])
-                glow:SetShown(lit)
-            end
-        end
-        paint(false)
-        btn:SetScript("OnEnter", function() paint(true) end)
-        btn:SetScript("OnLeave", function() paint(false) end)
 
         local setting = {
             type     = "Button",
@@ -769,7 +779,7 @@ function RichGroup:ButtonRow(opts)
             row      = row,
             rowHover = hl,
             button   = btn,
-            icon     = icon,
+            icon     = btn.icon,
         }
         table.insert(self.settings, setting)
         self.byLabel[spec.label] = setting

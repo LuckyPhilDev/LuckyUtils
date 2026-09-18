@@ -2,6 +2,7 @@
 
 ### Added
 - A rich settings `Select` row takes `disabled = true` and locks the same way a disabled `Toggle` does.
+- `LuckySettings.Rich.IconTextButton(parent, label, icon)` builds the borderless gold icon-and-label button `ButtonRow` uses, for any frame that wants to match the settings panel. It returns the button and its width.
 - `LuckyDeps:IsEnabled(addonName, minVersion)` takes an optional minimum version, read from the addon's `.toc` so it works before that addon loads.
 
 ## [1.18.3] - 2026-09-15
