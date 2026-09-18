@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Added
+- `LuckyDeps:IsEnabled(addonName, minVersion)` takes an optional minimum version, read from the addon's `.toc` so it works before that addon loads.
+
 ## [1.18.3] - 2026-09-15
 
 ### Fixed

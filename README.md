@@ -426,8 +426,11 @@ LuckyBugs:Show()
 ### LuckyDeps
 
 ```lua
--- Check if an optional dependency is installed and enabled
+-- Check if an optional dependency is installed and enabled, before or after it loads
 if LuckyDeps:IsEnabled("WeakAuras") then ... end
+
+-- The same, at a minimum version read from its .toc
+if LuckyDeps:IsEnabled("Luckys_Warbank_Stockist", "1.13.0") then ... end
 
 -- Check if loaded and optionally at minimum version
 local ok, err, status = LuckyDeps:Check("Details", "9.0.0")

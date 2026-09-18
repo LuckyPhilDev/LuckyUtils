@@ -146,4 +146,13 @@ LuckySettingsDB = {}
 LuckyDeps:ShowStandaloneNotice()
 assert(shown == 2, "a profile that has not seen the notice should still get it")
 
+-- ─── Enabled, before it loads ────────────────────────────────────────────────
+
+installed.Luckys_Warbank_Stockist = { loaded = true, version = "1.12.0" }
+assert(LuckyDeps:IsEnabled("Luckys_Warbank_Stockist"), "an enabled addon reads as enabled")
+assert(not LuckyDeps:IsEnabled("Luckys_Warbank_Stockist", "1.13.0"), "an older version fails a minimum")
+installed.Luckys_Warbank_Stockist.version = "1.13.0"
+assert(LuckyDeps:IsEnabled("Luckys_Warbank_Stockist", "1.13.0"), "the minimum version itself passes")
+assert(not LuckyDeps:IsEnabled("Not_Installed", "1.0.0"), "a missing addon is never enabled")
+
 print("LuckyDeps: all checks passed")

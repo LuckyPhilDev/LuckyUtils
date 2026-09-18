@@ -24,12 +24,16 @@ local function isAtLeast(actual, minimum)
     return true
 end
 
---- Returns true if an addon is installed and enabled, regardless of whether it has loaded yet.
+--- Returns true if an addon is installed and enabled, regardless of whether it
+--- has loaded yet, and when minVersion is given, at least that version. The
+--- version comes from its .toc, which the client reads before the addon loads.
 ---@param addonName string
+---@param minVersion string|nil
 ---@return boolean
-function LuckyDeps:IsEnabled(addonName)
+function LuckyDeps:IsEnabled(addonName, minVersion)
     local _, _, _, loadable = C_AddOns.GetAddOnInfo(addonName)
-    return loadable == true
+    if loadable ~= true then return false end
+    return not minVersion or isAtLeast(C_AddOns.GetAddOnMetadata(addonName, "Version") or "", minVersion)
 end
 
 LuckyDeps.Status = {
