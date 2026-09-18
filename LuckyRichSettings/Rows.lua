@@ -623,6 +623,7 @@ function RichGroup:Select(opts)
         rowHover = hl,
         dropdown = dd,
         parent   = opts.parent,
+        disabled = opts.disabled,
         refreshSelect = refresh,
     }
     table.insert(self.settings, setting)
@@ -630,6 +631,8 @@ function RichGroup:Select(opts)
 
     if opts.parent then
         setting.parentSetting = self.byLabel[opts.parent]
+    end
+    if setting.disabled or opts.parent then
         applyEnabled(setting)
     end
 
