@@ -1,3 +1,8 @@
+## [1.20.1] - 2026-09-21
+
+### Fixed
+- Bank Queue rows use the bag item's link, preserving its item level and quality. (Thanks for the report Tuulani)
+
 ## [1.20.0] - 2026-09-21
 
 ### Added

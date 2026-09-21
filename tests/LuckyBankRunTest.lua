@@ -9,6 +9,11 @@ LuckyUtilsStrings = { bankRun = {
 LuckyUI = { BODY_FONT = "font", C = { goldAccent = { 1, 1, 1 } } }
 function LuckyIcon(name) return name end
 C_Item = { GetItemIconByID = function() end, GetItemInfo = function() end }
+NUM_BAG_SLOTS = 0
+C_Container = {
+    GetContainerNumSlots = function() return 0 end,
+    GetContainerItemInfo = function() end,
+}
 GameTooltip = { IsOwned = function() return false end }
 LuckySettingsDB = {}
 
@@ -30,6 +35,7 @@ local function widget()
         if key == "Show" then return function(self) self.shown = true end end
         if key == "Hide" then return function(self) self.shown = false end end
         if key == "SetShown" then return function(self, shown) self.shown = shown end end
+        if key == "SetText" then return function(self, text) self.text = text end end
         return function() return widget() end
     end })
 end
@@ -204,5 +210,19 @@ check(LuckyBankRun.current == nil and window.shown == true, "a started run ends 
 
 fire("BANKFRAME_CLOSED")
 LuckySettingsDB = {}
+
+-- Queue rows use the item instance in a bag, not the base item link for its ID.
+NUM_BAG_SLOTS = 0
+C_Item.GetItemInfo = function() return "Base", "[Base]" end
+C_Container = {
+    GetContainerNumSlots = function() return 1 end,
+    GetContainerItemInfo = function() return { itemID = 99, hyperlink = "[Bag instance]" } end,
+}
+LuckyBankRun:Queue({
+    direction = "deposit",
+    plan = function() return moves(99) end,
+    run = function(job) job:Done() end,
+})
+check(window.rows[1].name.text == "[Bag instance]", "queue rows show the bag item link")
 
 print(string.format("%d LuckyBankRun tests passed", passed))

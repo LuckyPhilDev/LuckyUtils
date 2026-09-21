@@ -121,7 +121,11 @@ local function ShowItemTip(row)
         return
     end
     GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
-    GameTooltip:SetItemByID(row.itemID)
+    if row.itemLink then
+        GameTooltip:SetHyperlink(row.itemLink)
+    else
+        GameTooltip:SetItemByID(row.itemID)
+    end
     GameTooltip:Show()
 end
 
@@ -136,7 +140,7 @@ end
 
 -- direction is nil on rows that are not items, which keep the arrow's space
 -- so their text still lines up with the item names.
-local function SetRow(f, i, itemID, text, direction)
+local function SetRow(f, i, itemID, text, direction, itemLink)
     local row = f.rows[i]
     if not row then
         row = CreateFrame("Frame", nil, f)
@@ -168,12 +172,28 @@ local function SetRow(f, i, itemID, text, direction)
         f.rows[i] = row
     end
     row:SetPoint("TOPLEFT", 10, -RowsTop(f) - (i - 1) * ROW_H)
-    row.itemID, row.directionKey = itemID, direction
+    row.itemID, row.itemLink, row.directionKey = itemID, itemLink, direction
     row.direction:SetTexture(DIRECTIONS[direction] and LuckyIcon(DIRECTIONS[direction].icon))
     row.icon:SetTexture(itemID and (C_Item.GetItemIconByID(itemID) or 134400))
     row.name:SetText(text)
     row:Show()
     if GameTooltip:IsOwned(row) then ShowItemTip(row) end
+end
+
+local function BagItemLink(itemID)
+    local function FindInBag(bag)
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local info = C_Container.GetContainerItemInfo(bag, slot)
+            if info and info.itemID == itemID and info.hyperlink then return info.hyperlink end
+        end
+    end
+
+    for bag = 0, NUM_BAG_SLOTS do
+        local link = FindInBag(bag)
+        if link then return link end
+    end
+    local reagentBag = Enum and Enum.BagIndex and Enum.BagIndex.ReagentBag
+    if reagentBag then return FindInBag(reagentBag) end
 end
 
 -- Baganator hides BankFrame under a hidden parent, which IsShown misses, and
@@ -224,8 +244,9 @@ local function Render()
     local shown = math.min(#p.queue, MAX_ROWS)
     for i = 1, shown do
         local entry = p.queue[i]
-        local name = select(2, C_Item.GetItemInfo(entry.itemID)) or S.itemFallback:format(entry.itemID)
-        SetRow(f, i, entry.itemID, name, entry.direction)
+        local itemLink = entry.direction == "deposit" and BagItemLink(entry.itemID)
+        local name = itemLink or select(2, C_Item.GetItemInfo(entry.itemID)) or S.itemFallback:format(entry.itemID)
+        SetRow(f, i, entry.itemID, name, entry.direction, itemLink)
     end
     if #p.queue > MAX_ROWS then
         shown = shown + 1
