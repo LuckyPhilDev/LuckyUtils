@@ -85,10 +85,14 @@ function LuckyUI.CreatePanel(name, parent, w, h)
     return f
 end
 
+-- Height of the bar CreateHeader draws. It sits 1px inside the frame border,
+-- so a window's content starts HEADER_HEIGHT + 1 below the frame's top.
+LuckyUI.HEADER_HEIGHT = 32
+
 --- Create a header bar with gradient background, gold title, and close button.
 function LuckyUI.CreateHeader(frame, title)
     local h = CreateFrame("Frame", nil, frame)
-    h:SetHeight(32)
+    h:SetHeight(LuckyUI.HEADER_HEIGHT)
     h:SetPoint("TOPLEFT", 1, -1)
     h:SetPoint("TOPRIGHT", -1, -1)
 
@@ -121,15 +125,83 @@ function LuckyUI.CreateHeader(frame, title)
     cb:SetPoint("RIGHT", -8, 0)
     cb:SetScript("OnClick", function() frame:Hide() end)
 
+    frame.closeButton = cb
     frame.header = h
     return h
 end
 
+--- Create a standard Lucky window: the gold-bordered panel with a CreateHeader
+--- title bar, moved by dragging the header so clicks in the body never drag it.
+--
+-- opts fields (all optional):
+--   db, key   (table, string)  Where to persist the position. Written as
+--                              {point, relPoint, x, y} into the existing table,
+--                              so other fields a caller keeps there (a saved
+--                              size, say) survive a move
+--   default   (table)   Fallback {point, relPoint, x, y}, default centred
+--   strata    (string)  Frame strata, default "DIALOG"
+--   escClose  (bool)    Close on Escape, default true. Needs a name
+--
+-- Returns the frame and its header. The frame carries titleText, closeButton
+-- and header, plus RestorePosition() for callers that re-anchor it later.
+-- Hook OnHide rather than the close button to react to closing: Escape hides
+-- the frame without clicking anything.
+function LuckyUI.CreateWindow(name, w, h, title, opts)
+    opts = opts or {}
+    local c = LuckyUI.C
+    local f = CreateFrame("Frame", name, UIParent, "BackdropTemplate")
+    f:SetSize(w, h)
+    f:SetFrameStrata(opts.strata or "DIALOG")
+    f:SetClampedToScreen(true)
+    f:SetMovable(true)
+    f:EnableMouse(true)
+    f:Hide()
+    f:SetBackdrop(LuckyUI.Backdrop)
+    f:SetBackdropColor(c.bgDark[1], c.bgDark[2], c.bgDark[3], c.bgDark[4])
+    f:SetBackdropBorderColor(c.goldAccent[1], c.goldAccent[2], c.goldAccent[3])
+
+    local def = opts.default or { "CENTER", "CENTER", 0, 0 }
+    function f:RestorePosition()
+        local pos = opts.db and opts.db[opts.key]
+        self:ClearAllPoints()
+        if pos and pos.point then
+            self:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x or 0, pos.y or 0)
+        else
+            self:SetPoint(def[1], UIParent, def[2], def[3], def[4])
+        end
+    end
+    f:RestorePosition()
+
+    local header = LuckyUI.CreateHeader(f, title)
+    header:EnableMouse(true)
+    header:RegisterForDrag("LeftButton")
+    header:SetScript("OnDragStart", function() if f:IsMovable() then f:StartMoving() end end)
+    header:SetScript("OnDragStop", function()
+        f:StopMovingOrSizing()
+        if not opts.db then return end
+        local pos = opts.db[opts.key] or {}
+        pos.point, _, pos.relPoint, pos.x, pos.y = f:GetPoint(1)
+        opts.db[opts.key] = pos
+    end)
+
+    if name and opts.escClose ~= false then
+        table.insert(UISpecialFrames, name)
+    end
+    return f, header
+end
+
 --- Create a styled button. variant: "primary" | "secondary" (default) | "danger"
 function LuckyUI.CreateButton(parent, text, w, h, variant)
-    variant = variant or "secondary"
     local btn = CreateFrame("Button", nil, parent, "BackdropTemplate")
     btn:SetSize(w or 90, h or 28)
+    return LuckyUI.StyleButton(btn, text, variant)
+end
+
+--- Give a button you created yourself the CreateButton look, for one that
+--- needs a global name (a /click target) or another template alongside, such
+--- as SecureActionButtonTemplate. The button must inherit BackdropTemplate.
+function LuckyUI.StyleButton(btn, text, variant)
+    variant = variant or "secondary"
     btn:SetBackdrop(LuckyUI.Backdrop)
 
     local lbl = btn:CreateFontString(nil, "OVERLAY")
@@ -174,6 +246,10 @@ function LuckyUI.CreateButton(parent, text, w, h, variant)
             btn:SetBackdropBorderColor(c.borderDark[1], c.borderDark[2], c.borderDark[3])
         end)
     end
+
+    -- No disabled art of its own, so SetEnabled(false) dims the whole button.
+    btn:SetScript("OnDisable", function(self) self:SetAlpha(0.4) end)
+    btn:SetScript("OnEnable", function(self) self:SetAlpha(1) end)
 
     return btn
 end
@@ -400,6 +476,37 @@ function LuckyUI.CreateDivider(parent, labelText)
     return d
 end
 
+--- Create a styled single-line text input: dark background, a border that
+--- turns gold while focused, Enter and Escape drop focus.
+--
+-- opts fields (all optional):
+--   width      (number)  default 200
+--   height     (number)  default 24
+--   maxLetters (number)  default unlimited
+function LuckyUI.CreateInput(parent, opts)
+    opts = opts or {}
+    local c = LuckyUI.C
+    local box = CreateFrame("EditBox", nil, parent, "BackdropTemplate")
+    box:SetSize(opts.width or 200, opts.height or 24)
+    box:SetBackdrop(LuckyUI.Backdrop)
+    box:SetBackdropColor(c.bgInput[1], c.bgInput[2], c.bgInput[3], c.bgInput[4])
+    box:SetBackdropBorderColor(c.borderDark[1], c.borderDark[2], c.borderDark[3])
+    box:SetAutoFocus(false)
+    box:SetFont(LuckyUI.BODY_FONT, 12, "")
+    box:SetTextColor(c.textLight[1], c.textLight[2], c.textLight[3])
+    box:SetTextInsets(8, 8, 0, 0)
+    if opts.maxLetters then box:SetMaxLetters(opts.maxLetters) end
+    box:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    box:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    box:SetScript("OnEditFocusGained", function(self)
+        self:SetBackdropBorderColor(c.goldMuted[1], c.goldMuted[2], c.goldMuted[3])
+    end)
+    box:SetScript("OnEditFocusLost", function(self)
+        self:SetBackdropBorderColor(c.borderDark[1], c.borderDark[2], c.borderDark[3])
+    end)
+    return box
+end
+
 --- Create a styled single-line search input.
 -- Dark input background, a gold border that brightens on focus, a greyed-out
 -- placeholder shown while the box is empty, and a clear (x) button that appears
@@ -420,16 +527,8 @@ function LuckyUI.CreateSearchBox(parent, opts)
     local onChange = opts.onChange
     local c = LuckyUI.C
 
-    local box = CreateFrame("EditBox", nil, parent, "BackdropTemplate")
-    box:SetSize(opts.width or 200, opts.height or 24)
-    box:SetBackdrop(LuckyUI.Backdrop)
-    box:SetBackdropColor(c.bgInput[1], c.bgInput[2], c.bgInput[3], c.bgInput[4])
-    box:SetBackdropBorderColor(c.borderDark[1], c.borderDark[2], c.borderDark[3])
-    box:SetAutoFocus(false)
-    box:SetFont(LuckyUI.BODY_FONT, 12, "")
-    box:SetTextColor(c.textLight[1], c.textLight[2], c.textLight[3])
+    local box = LuckyUI.CreateInput(parent, { width = opts.width or 200, height = opts.height, maxLetters = 60 })
     box:SetTextInsets(8, 22, 0, 0)
-    box:SetMaxLetters(60)
 
     -- Placeholder, visible only while the box is empty.
     local placeholder = box:CreateFontString(nil, "ARTWORK")
@@ -464,13 +563,6 @@ function LuckyUI.CreateSearchBox(parent, opts)
         if onChange then onChange(query) end
     end)
     box:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus() end)
-    box:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
-    box:SetScript("OnEditFocusGained", function(self)
-        self:SetBackdropBorderColor(c.goldMuted[1], c.goldMuted[2], c.goldMuted[3])
-    end)
-    box:SetScript("OnEditFocusLost", function(self)
-        self:SetBackdropBorderColor(c.borderDark[1], c.borderDark[2], c.borderDark[3])
-    end)
 
     function box:SetQuery(text) self:SetText(text or "") end
     function box:Clear() self:SetText("") end

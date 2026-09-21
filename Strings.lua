@@ -70,6 +70,7 @@ LuckyUtilsStrings = LuckyStrings.New("LuckyUtilsStrings", {
         itemFallback = "Item %d",
         hide         = "Hide Bank Queue",
         hideTooltip  = "When enabled, the window beside the bank that lists items as they move to and from your Warband Bank stays hidden. In Manual mode it always shows, since it holds the Start button. Applies to every character and every Lucky addon.",
+        hideManual   = "Locked while Warbank Stocking Mode is Manual, which needs the window for its Start button.",
         start        = "Start",
         pause        = "Pause",
         resume       = "Resume",

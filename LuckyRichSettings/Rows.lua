@@ -112,7 +112,7 @@ end
 -- Walks the whole ancestry, not just the row above: a grandchild under a ticked
 -- parent is still locked when that parent's own parent is cleared.
 local function isEnabled(setting)
-    if setting.disabled then return false end
+    if resolveValue(setting.disabled) then return false end
 
     local p = setting.parentSetting
     if not p then return true end
@@ -181,7 +181,7 @@ local function refreshLiveValues(builder)
         end
         -- Second pass: parents are fresh now, so dependent rows re-lock.
         for _, s in ipairs(g.settings) do
-            if s.parentSetting then applyEnabled(s) end
+            if s.parentSetting or s.disabled then applyEnabled(s) end
         end
         refreshWarnings(g)
     end
@@ -361,9 +361,10 @@ function RichGroup:Toggle(opts)
 
     if opts.parent then
         setting.parentSetting = self.byLabel[opts.parent]
-        -- A disabled parent locks its whole subtree, so children inherit it.
+        -- A disabled parent locks its whole subtree, so children inherit it,
+        -- function and all: a parent that locks on a condition locks them on it too.
         if setting.parentSetting and setting.parentSetting.disabled then
-            setting.disabled = true
+            setting.disabled = setting.parentSetting.disabled
         end
     end
 
@@ -603,6 +604,9 @@ function RichGroup:Select(opts)
                 function()
                     if opts.onSelect then opts.onSelect(o.key) end
                     refresh()
+                    -- A choice here can lock or unlock rows elsewhere, so the
+                    -- panel re-reads itself the way opening it would.
+                    refreshLiveValues(group.panel)
                 end)
         end
     end)

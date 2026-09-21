@@ -438,6 +438,7 @@ function Run:AddModeSetting(group, opts)
         note     = opts.ownedBy and S.modeOwned:format(opts.ownedBy),
         since    = opts.since,
         disabled = opts.ownedBy ~= nil,
+        width    = 150,
         options  = { { key = "auto", label = S.modeAuto }, { key = "manual", label = S.modeManual } },
         value    = function() return IsManual() and "manual" or "auto" end,
         onSelect = function(key)
@@ -453,7 +454,11 @@ function Run:AddSettingsToggle(group, since)
     group:Toggle({
         label    = S.hide,
         desc     = S.hideTooltip,
+        note     = S.hideManual,
         since    = since,
+        -- Manual mode holds the run until Start is pressed, and Start is on the
+        -- window, so the choice locks off there and comes back with Auto.
+        disabled = IsManual,
         checked  = IsHidden,
         onToggle = function(checked)
             LuckySettingsDB = LuckySettingsDB or {}

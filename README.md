@@ -203,14 +203,29 @@ local label = name .. " " .. LuckyUI.DOT .. " " .. realm
 **Frame helpers:**
 
 ```lua
--- Styled panel (dark bg, gold border, draggable)
-local panel = LuckyUI.CreatePanel("MyPanel", UIParent, 400, 300)
+-- Standard window: gold-bordered panel, header with title and close button,
+-- dragged by the header, position saved to db[key], closes on Escape.
+-- Starts hidden. Content starts LuckyUI.HEADER_HEIGHT + 1 below the top.
+local win, header = LuckyUI.CreateWindow("MyWindow", 400, 300, "My Addon", {
+    db = MyAddonDB, key = "windowPos",  -- optional; other fields in db[key] are kept
+    strata = "MEDIUM",                  -- default "DIALOG"
+})
+-- win.titleText, win.closeButton, win.header, win:RestorePosition()
+-- React to closing with win:HookScript("OnHide", ...): Escape skips the close button.
 
--- Header bar with title and close button
+-- The parts CreateWindow is built from, for frames that need something else
+local panel = LuckyUI.CreatePanel("MyPanel", UIParent, 400, 300)  -- draggable anywhere
 LuckyUI.CreateHeader(panel, "My Addon")
 
--- Buttons: "primary" | "secondary" (default) | "danger"
+-- Buttons: "primary" | "secondary" (default) | "danger". Dimmed while disabled.
 local btn = LuckyUI.CreateButton(parent, "Save", 90, 28, "primary")
+-- The same look on a button you made: a /click name or a secure template.
+-- It must inherit BackdropTemplate.
+local go = CreateFrame("Button", "MyAddonGo", parent, "BackdropTemplate,SecureActionButtonTemplate")
+LuckyUI.StyleButton(go, "Go", "primary")
+
+-- Text input: gold border while focused, Enter and Escape drop focus
+local name = LuckyUI.CreateInput(parent, { width = 240, height = 24, maxLetters = 32 })
 
 -- Checkbox (gold fill when checked)
 local cb = LuckyUI.CreateCheckbox(parent, 16)
@@ -235,8 +250,9 @@ local tick = LuckyUI.CreateIconButton(parent, { icon = "check", size = 18 })
 
 -- The shared set, as white line art on transparent, tinted by whatever draws it:
 -- arrow-down-to-line, arrow-up-from-line, check, copy, crosshair, crown, dice,
--- filter, layers, pause, pencil, play, plus, portal, search, settings, sparkle,
--- square, target, trash, triangle-alert, x. LuckyIcon(name) gives the full
+-- eraser, filter, layers, pause, pencil, play, plus, portal, search, settings,
+-- sparkle, square, square-pen, target, trash, triangle-alert, x. LuckyIcon(name)
+-- gives the full
 -- texture path for one.
 
 -- Drag-to-move with SavedVariables persistence
