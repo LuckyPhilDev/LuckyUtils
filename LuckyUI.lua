@@ -314,6 +314,127 @@ function LuckyUI.CreateIconButton(parent, opts)
     return btn
 end
 
+--- A square button in the action bar style, for full-colour Interface\Icons
+--- art: the standard square highlight, no tint.
+--
+-- opts fields:
+--   texture  (string|number)  Normal texture path or fileID
+--   size     (number)  Square size, default 42
+--   name     (string)  Global frame name
+--   template (string)  e.g. "SecureActionButtonTemplate"
+--   tooltip  (function)  fn(GameTooltip, button), called before the tooltip shows
+function LuckyUI.CreateActionButton(parent, opts)
+    local btn = CreateFrame("Button", opts.name, parent, opts.template)
+    btn:SetSize(opts.size or 42, opts.size or 42)
+    btn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+    btn:GetHighlightTexture():SetBlendMode("ADD")
+    if opts.texture then btn:SetNormalTexture(opts.texture) end
+    if opts.tooltip then
+        btn:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            opts.tooltip(GameTooltip, self)
+            GameTooltip:Show()
+        end)
+        btn:SetScript("OnLeave", GameTooltip_Hide)
+    end
+    return btn
+end
+
+-- Kept on the global so a newer library copy hands out the columns an older
+-- one already built rather than stacking a second set on top.
+LuckyUI.sideColumns = LuckyUI.sideColumns or {}
+
+local SIDE_GAP = 5
+
+local function SavedSidePositions()
+    LuckySettingsDB = LuckySettingsDB or {}
+    LuckySettingsDB.sideColumns = LuckySettingsDB.sideColumns or {}
+    return LuckySettingsDB.sideColumns
+end
+
+--- The column of action buttons down the right of anchorFrame, shared by every
+--- Lucky addon under the same key so their buttons stack rather than overlap.
+--- Right-drag any button to move the whole column; the offset from the
+--- anchor's top right is saved and follows the window.
+--
+-- column:AddButton(opts) takes CreateActionButton's opts plus `order`, lowest
+-- at the top. Show and Hide the buttons freely; the shown ones close up.
+function LuckyUI.SideColumn(key, anchorFrame)
+    local column = LuckyUI.sideColumns[key]
+    if column then return column end
+
+    column = CreateFrame("Frame", nil, anchorFrame)
+    column:SetSize(1, 1)
+    column:SetMovable(true)
+    column:SetClampedToScreen(true)
+    column.buttons = {}
+
+    function column:RestorePosition()
+        local pos = SavedSidePositions()[key]
+        self:ClearAllPoints()
+        self:SetPoint("TOPLEFT", anchorFrame, "TOPRIGHT", pos and pos.x or SIDE_GAP, pos and pos.y or 0)
+    end
+
+    local function SavePosition()
+        local left, top = column:GetLeft(), column:GetTop()
+        local right, anchorTop = anchorFrame:GetRight(), anchorFrame:GetTop()
+        if left and top and right and anchorTop then
+            SavedSidePositions()[key] = { x = left - right, y = top - anchorTop }
+        end
+    end
+
+    function column:Layout()
+        local above
+        for _, btn in ipairs(self.buttons) do
+            if btn:IsShown() then
+                btn:ClearAllPoints()
+                if above then
+                    btn:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -SIDE_GAP)
+                else
+                    btn:SetPoint("TOPLEFT", self, "TOPLEFT", 0, 0)
+                end
+                above = btn
+            end
+        end
+    end
+
+    function column:AddButton(opts)
+        local btn = LuckyUI.CreateActionButton(self, opts)
+        btn.order = opts.order or 0
+        btn.addedAt = #self.buttons
+        btn:RegisterForDrag("RightButton")
+        btn:SetScript("OnDragStart", function() column:StartMoving() end)
+        btn:SetScript("OnDragStop", function()
+            column:StopMovingOrSizing()
+            SavePosition()
+            column:RestorePosition()
+        end)
+        btn:HookScript("OnShow", function() column:Layout() end)
+        btn:HookScript("OnHide", function() column:Layout() end)
+        table.insert(self.buttons, btn)
+        table.sort(self.buttons, function(a, b)
+            if a.order ~= b.order then return a.order < b.order end
+            return a.addedAt < b.addedAt
+        end)
+        self:Layout()
+        return btn
+    end
+
+    anchorFrame:HookScript("OnShow", function() column:RestorePosition() end)
+    column:RestorePosition()
+    LuckyUI.sideColumns[key] = column
+    return column
+end
+
+--- Gives the column a starting position when none is saved yet, for an addon
+--- moving a position it saved itself over to the shared column.
+function LuckyUI.SeedSideColumnPosition(key, pos)
+    local saved = SavedSidePositions()
+    if saved[key] == nil and pos and pos.x and pos.y then
+        saved[key] = { x = pos.x, y = pos.y }
+    end
+end
+
 --- Create a styled checkbox (gold accent when checked).
 function LuckyUI.CreateCheckbox(parent, size)
     size = size or 16
