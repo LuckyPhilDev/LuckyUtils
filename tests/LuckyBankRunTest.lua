@@ -31,6 +31,7 @@ function geterrorhandler() return function(err) reported[#reported + 1] = err en
 local function widget()
     return setmetatable({}, { __index = function(_, key)
         if key == "GetWidth" then return function() return 300 end end
+        if key == "GetStringHeight" then return function() return 12 end end
         if key == "IsShown" then return function(self) return self.shown ~= false end end
         if key == "Show" then return function(self) self.shown = true end end
         if key == "Hide" then return function(self) self.shown = false end end
@@ -51,6 +52,7 @@ dofile("LuckyBankRun.lua")
 
 local window = widget()
 window.rows, window.titleText, window.progressBar = {}, widget(), widget()
+window.footer, window.footerLine = widget(), widget()
 window.buttons = { start = widget(), pause = widget(), resume = widget() }
 for _, button in pairs(window.buttons) do button.shown = false end
 LuckyBankRun.frame = window
@@ -224,5 +226,19 @@ LuckyBankRun:Queue({
     run = function(job) job:Done() end,
 })
 check(window.rows[1].name.text == "[Bag instance]", "queue rows show the bag item link")
+
+-- Footers draw under the rows; one returning nil adds nothing, and one that
+-- errors is reported without breaking the window.
+LuckyBankRun:AddFooter(function() return "Active Sets" end)
+LuckyBankRun:AddFooter(function() return nil end)
+LuckyBankRun:AddFooter(function() error("footer boom") end)
+reported = {}
+LuckyBankRun:Queue({
+    direction = "deposit",
+    plan = function() return moves(99) end,
+    run = function(job) job:Done() end,
+})
+check(window.footer.text == "Active Sets" and window.footer.shown == true, "footer text shows under the rows")
+check(#reported >= 1, "an erroring footer reaches the error handler")
 
 print(string.format("%d LuckyBankRun tests passed", passed))
