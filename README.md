@@ -255,6 +255,24 @@ local tick = LuckyUI.CreateIconButton(parent, { icon = "check", size = 18 })
 -- gives the full
 -- texture path for one.
 
+-- Square button for full-colour Interface\Icons art, action bar highlight
+local act = LuckyUI.CreateActionButton(parent, {
+    texture  = 136243,
+    size     = 42,                           -- default
+    name     = "MyAddonAction",              -- optional global name
+    template = "SecureActionButtonTemplate", -- optional
+    tooltip  = function(tip, btn) tip:SetText("Do the thing") end,
+})
+
+-- The column of buttons down the right of a window, shared by every Lucky
+-- addon under the same key so their buttons stack instead of overlapping.
+-- Hidden buttons leave no gap. Right-drag any button to move the whole column;
+-- its offset from the window is saved in LuckySettingsDB.
+local column = LuckyUI.SideColumn("AuctionHouse", AuctionHouseFrame)
+local buy = column:AddButton({ texture = 133784, order = 10 })  -- CreateActionButton opts, lowest order on top
+-- Carry over a position your addon saved itself, used only when none is saved yet
+LuckyUI.SeedSideColumnPosition("AuctionHouse", MyAddonDB.ahButtonPos)
+
 -- Drag-to-move with SavedVariables persistence
 LuckyUI.EnableDrag(myFrame, {
     db      = MyAddonDB,
