@@ -37,6 +37,7 @@ local ROW_H = 22
 local HEADER_H = 36
 local START_H = 20
 local DONE_LINGER = 3
+local FOOTER_GAP = 8
 
 local DIRECTIONS = {
     deposit  = { icon = "arrow-down-to-line", title = S.deposit,    desc = S.depositDesc },
@@ -54,6 +55,8 @@ Run.pending = Run.pending or {}
 -- queue holds the rows still to move; moved and total count single moves
 -- across the whole run, for the title count and the bar along the foot.
 Run.progress = Run.progress or { queue = {}, moved = 0, total = 0 }
+-- Functions other addons add, each returning text for the foot of the window or nil.
+Run.footers = Run.footers or {}
 
 local function IsManual()
     return LuckySettingsDB and LuckySettingsDB.bankQueueMode == "manual"
@@ -219,9 +222,46 @@ local function AnchorToBank(f)
     end
 end
 
+local function FooterText()
+    local lines = {}
+    for _, footer in ipairs(Run.footers) do
+        local ok, text = xpcall(footer, geterrorhandler())
+        if ok and text then lines[#lines + 1] = text end
+    end
+    return #lines > 0 and table.concat(lines, "\n") or nil
+end
+
+-- Draws the footers under a divider at top, and returns the height they take.
+local function ShowFooter(f, top)
+    if not f.footer then
+        local gold = LuckyUI.C.goldAccent
+        f.footerLine = f:CreateTexture(nil, "ARTWORK")
+        f.footerLine:SetHeight(1)
+        f.footerLine:SetColorTexture(gold[1], gold[2], gold[3], 0.4)
+        f.footer = f:CreateFontString(nil, "OVERLAY")
+        f.footer:SetFont(LuckyUI.BODY_FONT, 12, "")
+        f.footer:SetJustifyH("LEFT")
+        f.footer:SetSpacing(3)
+    end
+    local text = FooterText()
+    f.footerLine:SetShown(text ~= nil)
+    f.footer:SetShown(text ~= nil)
+    if not text then return 0 end
+    f.footerLine:ClearAllPoints()
+    f.footerLine:SetPoint("TOPLEFT", 1, -top)
+    f.footerLine:SetPoint("TOPRIGHT", -1, -top)
+    f.footer:ClearAllPoints()
+    f.footer:SetPoint("TOPLEFT", 10, -(top + FOOTER_GAP))
+    -- An explicit width, so the wrapped height is right on the first draw.
+    f.footer:SetWidth(f:GetWidth() - 20)
+    f.footer:SetText(text)
+    return f.footer:GetStringHeight() + FOOTER_GAP + 6
+end
+
 local function ShowRows(f, count)
     for i, row in ipairs(f.rows) do row:SetShown(i <= count) end
-    f:SetHeight(RowsTop(f) + count * ROW_H + 10)
+    local top = RowsTop(f) + count * ROW_H + 4
+    f:SetHeight(top + ShowFooter(f, top) + 6)
     AnchorToBank(f)
     f:Show()
 end
@@ -413,6 +453,12 @@ function Run:Queue(spec)
     Enqueue(spec)
     if Run.progress.total > 0 then Render() end
     StartNext()
+end
+
+--- Add a line to the foot of the window. footer() returns text, or nil for
+--- none, and is asked again each time the window redraws.
+function Run:AddFooter(footer)
+    table.insert(self.footers, footer)
 end
 
 --- Run a job every time the bank opens, or on Start in Manual mode. Lower
