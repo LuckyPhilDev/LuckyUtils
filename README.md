@@ -181,6 +181,8 @@ The window beside the bank (Blizzard's or Baganator's) lists the planned items, 
 
 `LuckyBankRun:AddModeSetting(group, { since = ..., ownedBy = ... })` adds the account-wide Auto or Manual choice. In Manual mode the bank-open jobs wait: the window opens listing every planned item under a Start button, which calls `LuckyBankRun:StartBankJobs()`, and the Hide toggle does not apply. Pass `ownedBy` with another installed addon's name to lock that addon's copy of the row and point the player there.
 
+`LuckyBankRun:AddFooter(footer)` adds a line to the foot of the window, under a divider. `footer()` returns the text, or nil for none, and is asked again on every redraw.
+
 ---
 
 ### LuckyUI
