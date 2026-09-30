@@ -8,11 +8,9 @@ LuckyInstance = LuckyInstance or {}
 LuckyInstance.MYTHIC_KEYSTONE_DIFFICULTY = 8
 
 -- Delves are known by difficulty, not C_PartyInfo.IsDelveInProgress: that also
--- reports true in delve-like scenarios such as Tidebound Grotto.
-LuckyInstance.DELVE_DIFFICULTY_IDS = {
-    [208] = true, [215] = true, [216] = true, [217] = true,
-    [218] = true, [219] = true, [220] = true,
-}
+-- reports true in delve-like scenarios such as Tidebound Grotto. Only 208 is
+-- Delves per warcraft.wiki.gg/wiki/DifficultyID; 216 is Quest and 220 Story raid.
+LuckyInstance.DELVE_DIFFICULTY_IDS = { [208] = true }
 
 local KIND_BY_TYPE = {
     raid = "raid", party = "dungeon", pvp = "battleground", arena = "arena", scenario = "scenario",

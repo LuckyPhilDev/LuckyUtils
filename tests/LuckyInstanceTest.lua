@@ -19,6 +19,7 @@ assert(LuckyInstance.Current() == "delve", "the Delves difficulty is a delve")
 
 at(true, "scenario", "scenario", 1, "Tidebound Grotto")
 assert(LuckyInstance.Current() == "scenario", "a scenario on another difficulty is not a delve")
+assert(not LuckyInstance.IsDelve(216) and not LuckyInstance.IsDelve(220), "Quest and Story raid are not delves")
 
 at(true, "party", "party", 8)
 assert(LuckyInstance.Current() == "mythicplus", "the keystone difficulty is Mythic+")
