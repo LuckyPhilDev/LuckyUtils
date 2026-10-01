@@ -147,6 +147,13 @@ resting = false
 fire("PLAYER_UPDATE_RESTING")
 check(window().hidesIn, 25, "and timed once you leave")
 
+resting = true
+fire("PLAYER_UPDATE_RESTING")
+check(window().hidesIn, false, "held again back in a rest area")
+resting = false
+fire("PLAYER_ENTERING_WORLD", false, false)
+check(window().hidesIn, 25, "and timed when a summon takes you out with no resting update")
+
 -- Dimming ----------------------------------------------------------------------
 local function tick(elapsed) events.dim(nil, elapsed) end
 

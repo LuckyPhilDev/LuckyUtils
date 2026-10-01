@@ -319,10 +319,12 @@ watcher:UnregisterAllEvents()
 watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
 watcher:RegisterEvent("PLAYER_UPDATE_RESTING")
 watcher:SetScript("OnEvent", function(_, event, isLogin, isReload)
-    if event == "PLAYER_UPDATE_RESTING" then
-        OnRestingChanged()
-    elseif isLogin or isReload then
+    if event == "PLAYER_ENTERING_WORLD" and (isLogin or isReload) then
         Reminders.wasResting = IsResting()
         C_Timer.After(LOGIN_DELAY, function() Reminders:Show() end)
+    else
+        -- A summon or portal out of a rest area can skip PLAYER_UPDATE_RESTING,
+        -- so every world entry rechecks.
+        OnRestingChanged()
     end
 end)
