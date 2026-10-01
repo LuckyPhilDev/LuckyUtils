@@ -23,6 +23,7 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 - **LuckyStrings** — seals a table of user-facing strings so a mistyped key shows up on screen as a red placeholder naming the key, instead of a blank label.
 - **LuckyLog** — gated debug loggers that stay silent until an addon's debug flag is on.
 - **LuckyDeps** — optional dependency checks with version validation.
+- **LuckyInstance**: one shared answer to "what content is the player in?" (open world, raid, Mythic+, dungeon, delve, battleground, arena, scenario), so every addon recognises a delve or a keystone the same way.
 - **LuckySound** — helpers for addon sound files and built-in WoW sound kit entries.
 - **LuckyUtils** — general utilities: recursive SavedVariables initialisation and canonical `Name-Realm` character keys.
 - **LuckyDB**: transactional, sequential SavedVariables migrations with recursive defaults and schema version checks.
@@ -54,7 +55,7 @@ Libs\LuckysUtils\embeds.xml
 YourFirstFile.lua
 ```
 
-Every copy registers `LuckysUtils-1.0` with LibStub and only one copy's files run. The highest `MINOR` wins; where two copies tie, an embedded copy takes the registration from the standalone addon, and otherwise the first loaded keeps it. A copy from before the gate replaces the published tables instead of merging into them; the winner remembers what it published and restores it as later addons load, so one of those cannot strip the API out from under a consumer. The winner publishes the same globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyStrings`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBankRun`, `LuckyBugs`, plus `LuckyMedia(fileName)` and `LuckyIcon(name)` for paths into the library Media folder), available once the library has loaded, whichever addon carried it. To see which copy won in-game: `/dump LibStub.minors["LuckysUtils-1.0"]`, and `/dump LuckysUtilsHosts` for every copy that loaded.
+Every copy registers `LuckysUtils-1.0` with LibStub and only one copy's files run. The highest `MINOR` wins; where two copies tie, an embedded copy takes the registration from the standalone addon, and otherwise the first loaded keeps it. A copy from before the gate replaces the published tables instead of merging into them; the winner remembers what it published and restores it as later addons load, so one of those cannot strip the API out from under a consumer. The winner publishes the same globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyStrings`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyInstance`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBankRun`, `LuckyBugs`, plus `LuckyMedia(fileName)` and `LuckyIcon(name)` for paths into the library Media folder), available once the library has loaded, whichever addon carried it. To see which copy won in-game: `/dump LibStub.minors["LuckysUtils-1.0"]`, and `/dump LuckysUtilsHosts` for every copy that loaded.
 
 Where an embedded copy is loaded and no installed addon lists `Luckys_Utils` as a required dependency, a panel tells the player once that the standalone addon can be uninstalled.
 

@@ -21,6 +21,7 @@
     <Script file="LuckyRichSettings\Panel.lua"/>
     <Script file="LuckyMinimap.lua"/>
     <Script file="LuckySound.lua"/>
+    <Script file="LuckyInstance.lua"/>
     <Script file="LuckyRoster.lua"/>
     <Script file="LuckyBankRun.lua"/>
 </Ui>

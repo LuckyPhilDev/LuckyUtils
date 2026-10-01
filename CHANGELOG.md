@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Added
+- `LuckyInstance.Current()` classifies where the player is as `openworld`, `raid`, `mythicplus`, `dungeon`, `delve`, `battleground`, `arena` or `scenario`, with the instance details. Delves are recognised by difficulty, not `C_PartyInfo.IsDelveInProgress`, which also reports true in delve-like scenarios. Also `LuckyInstance.IsDelve(difficultyID)` and `LuckyInstance.KeystoneLevel()`. `VersionGate` MINOR is 26.
+
 ## [1.22.0] - 2026-09-26
 
 ### Added
