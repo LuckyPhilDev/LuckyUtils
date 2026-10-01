@@ -126,4 +126,16 @@ f:StartAutoHide(2)
 f:Fire("OnUpdate", 1)
 check(f.autoHideBar.width, 100, "and an override sets a new duration")
 
+-- A caller can dim the frame under the timer ----------------------------------
+f:StopAutoHide()
+f:SetAutoHideAlpha(0.5)
+check(f.alpha, 0.5, "dimmed while idle")
+f:StartAutoHide(10)
+f:Fire("OnUpdate", 10.375)
+check(f.alpha, 0.25, "the closing fade scales down from the dimmed alpha")
+f:SetAutoHideAlpha(1)
+check(f.alpha, 0.5, "and follows a change part way through")
+f:StopAutoHide()
+check(f.alpha, 1, "stopping leaves the frame at the alpha last asked for")
+
 print(passed .. " LuckyUI auto-hide tests passed")

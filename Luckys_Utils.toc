@@ -31,3 +31,4 @@ LuckySound.lua
 LuckyInstance.lua
 LuckyRoster.lua
 LuckyBankRun.lua
+LuckyReminders.lua

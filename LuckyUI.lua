@@ -515,7 +515,8 @@ local AUTOHIDE_FADE = 0.75
 --- anything inside it puts the wait back to full and holds it there, so
 --- something being read is never taken away mid-sentence and looking away gives
 --- the whole wait again. Stamps StartAutoHide and StopAutoHide on the frame; one
---- that is never started keeps no bar and no OnUpdate.
+--- that is never started keeps no bar and no OnUpdate. SetAutoHideAlpha is for a
+--- caller that dims the frame: the closing fade scales down from that alpha.
 function LuckyUI.EnableAutoHide(frame, seconds)
     if frame.autoHideBar then return frame end
 
@@ -570,6 +571,15 @@ function LuckyUI.EnableAutoHide(frame, seconds)
         self.autoHideBar:Hide()
         self:SetScript("OnUpdate", nil)
         if self.autoHideAlpha then self:SetAlpha(self.autoHideAlpha) end
+    end
+
+    function frame:SetAutoHideAlpha(alpha)
+        self.autoHideAlpha = alpha
+        if self.autoHideLeft then
+            paint(self)
+        else
+            self:SetAlpha(alpha)
+        end
     end
 
     return frame
