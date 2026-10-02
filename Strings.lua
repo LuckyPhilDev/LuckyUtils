@@ -85,6 +85,22 @@ LuckyUtilsStrings = LuckyStrings.New("LuckyUtilsStrings", {
         modeOwned    = "Set in %s while it is installed.",
     },
 
+    reminders = {
+        title        = "Reminders",
+        more         = "and %d more",
+        itemFallback = "Item %d",
+        seconds      = "Show Reminders For",
+        secondsDesc  = "How long the Reminders window stays up before fading. Hovering it restarts the count. Set it to 0 to keep the window up until you close it. Applies to every character and every Lucky addon.",
+        secondsUnit  = "s",
+        dimSeconds   = "Dim Reminders After",
+        dimSecondsDesc = "How long the Reminders window stays at full brightness before it dims. Hovering it brings it back and restarts the count. Set it to 0 to never dim. This is separate from the timer that closes the window. Applies to every character and every Lucky addon.",
+        dimAlpha     = "Dimmed Opacity",
+        dimAlphaDesc = "How visible the Reminders window is once it has dimmed. Applies to every character and every Lucky addon.",
+        percentUnit  = "%",
+        stay         = "Keep Reminders Open While Resting",
+        stayDesc     = "Keeps the Reminders window up while you are in a city or inn, until everything on it is done or you leave. It fades as usual once you head out.",
+    },
+
     bugs = {
         prefix          = "LuckyBugs:",
         unknownAddon    = "A Lucky addon",

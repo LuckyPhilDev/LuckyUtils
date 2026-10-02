@@ -24,4 +24,5 @@
     <Script file="LuckyInstance.lua"/>
     <Script file="LuckyRoster.lua"/>
     <Script file="LuckyBankRun.lua"/>
+    <Script file="LuckyReminders.lua"/>
 </Ui>

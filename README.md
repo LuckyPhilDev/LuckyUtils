@@ -29,6 +29,7 @@ This addon is a **dependency** — it does nothing on its own. If another addon 
 - **LuckyDB**: transactional, sequential SavedVariables migrations with recursive defaults and schema version checks.
 - **LuckyBankQueue**: sequential container transfers with lock polling, cursor recovery, partial-stack support, and destination retries.
 - **LuckyBankRun**: runs every Lucky addon's bank jobs one at a time and lists the items still to move in a window beside the bank.
+- **LuckyReminders**: one Reminders window, opened at login and on entering a rest area, that any Lucky addon adds rows to.
 
 ---
 
@@ -55,7 +56,7 @@ Libs\LuckysUtils\embeds.xml
 YourFirstFile.lua
 ```
 
-Every copy registers `LuckysUtils-1.0` with LibStub and only one copy's files run. The highest `MINOR` wins; where two copies tie, an embedded copy takes the registration from the standalone addon, and otherwise the first loaded keeps it. A copy from before the gate replaces the published tables instead of merging into them; the winner remembers what it published and restores it as later addons load, so one of those cannot strip the API out from under a consumer. The winner publishes the same globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyStrings`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyInstance`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBankRun`, `LuckyBugs`, plus `LuckyMedia(fileName)` and `LuckyIcon(name)` for paths into the library Media folder), available once the library has loaded, whichever addon carried it. To see which copy won in-game: `/dump LibStub.minors["LuckysUtils-1.0"]`, and `/dump LuckysUtilsHosts` for every copy that loaded.
+Every copy registers `LuckysUtils-1.0` with LibStub and only one copy's files run. The highest `MINOR` wins; where two copies tie, an embedded copy takes the registration from the standalone addon, and otherwise the first loaded keeps it. A copy from before the gate replaces the published tables instead of merging into them; the winner remembers what it published and restores it as later addons load, so one of those cannot strip the API out from under a consumer. The winner publishes the same globals (`LuckyUI`, `LuckySettings`, `LuckyRichSettings`, `LuckyRoster`, `LuckyMinimap`, `LuckyProfiles`, `LuckyItem`, `LuckyStrings`, `LuckyLog`, `LuckyDeps`, `LuckySound`, `LuckyInstance`, `LuckyUtils`, `LuckyDB`, `LuckyBankQueue`, `LuckyBankRun`, `LuckyReminders`, `LuckyBugs`, plus `LuckyMedia(fileName)` and `LuckyIcon(name)` for paths into the library Media folder), available once the library has loaded, whichever addon carried it. To see which copy won in-game: `/dump LibStub.minors["LuckysUtils-1.0"]`, and `/dump LuckysUtilsHosts` for every copy that loaded.
 
 Where an embedded copy is loaded and no installed addon lists `Luckys_Utils` as a required dependency, a panel tells the player once that the standalone addon can be uninstalled.
 
@@ -183,6 +184,26 @@ The window beside the bank (Blizzard's or Baganator's) lists the planned items, 
 `LuckyBankRun:AddModeSetting(group, { since = ..., ownedBy = ... })` adds the account-wide Auto or Manual choice. In Manual mode the bank-open jobs wait: the window opens listing every planned item under a Start button, which calls `LuckyBankRun:StartBankJobs()`, and the Hide toggle does not apply. Pass `ownedBy` with another installed addon's name to lock that addon's copy of the row and point the player there.
 
 `LuckyBankRun:AddFooter(footer)` adds a line to the foot of the window, under a divider. `footer()` returns the text, or nil for none, and is asked again on every redraw.
+
+---
+
+### LuckyReminders
+
+One window of things to go and do. It opens two seconds after login and whenever the player enters a rest area, provided at least one source has a row to show. Each addon registers a source:
+
+```lua
+LuckyReminders:Register("lowStock", {
+    title = "Low Stock",    -- optional; a section without one has no title line
+    order = 20,             -- lowest first, default 100
+    rows  = function() return { { itemID = 1234, detail = "3 / 20" } } end,
+})
+```
+
+`rows()` is asked again on every redraw and returns nil or an empty list while there is nothing to remind about. A row is `{ icon, text, detail }`, or `{ itemID, detail }` to have the item's icon and link filled in; a section of item rows sorts by name, and a section longer than twelve rows is cut with a count of the rest. A source that errors is reported and skipped. Orders in use: Grab-bag 10, Stockist low stock 20.
+
+`LuckyReminders:Refresh()` redraws the window if it is up, and closes it once the last row clears; call it when a source's rows change. It never opens the window. `LuckyReminders:Show()` opens it and starts the timer.
+
+`LuckyReminders:AddSettings(group, since)` adds the account-wide timer slider, the dimming sliders and the Keep Reminders Open While Resting toggle to a rich settings group. A timer of 0 keeps the window up until it is closed. Dim Reminders After fades the window to the Dimmed Opacity once it has sat unhovered that long, 0 meaning never; hovering brings it back. The values and the window position live in `LuckySettingsDB.reminders`, read through `LuckyReminders.Saved()`.
 
 ---
 
