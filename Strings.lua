@@ -127,6 +127,7 @@ LuckyUtilsStrings = LuckyStrings.New("LuckyUtilsStrings", {
 
     settings = {
         notRegistered = "Settings panel not registered.",
+        openAfterCombat = "Settings will open when you leave combat.",
     },
 
     richSettings = {

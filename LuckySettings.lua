@@ -70,7 +70,18 @@ function LuckySettings:Open(category)
     end
     local id = (type(category.GetID) == "function" and category:GetID()) or category.ID
     Log("Opening category ID:", tostring(id))
-    if id then
+    if id and InCombatLockdown() then
+        print(LuckyUtilsStrings.settings.openAfterCombat)
+        LuckySettings.pendingOpen = category
+        LuckySettings.combatFrame = LuckySettings.combatFrame or CreateFrame("Frame")
+        LuckySettings.combatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+        LuckySettings.combatFrame:SetScript("OnEvent", function(frame)
+            frame:UnregisterEvent("PLAYER_REGEN_ENABLED")
+            local pending = LuckySettings.pendingOpen
+            LuckySettings.pendingOpen = nil
+            LuckySettings:Open(pending)
+        end)
+    elseif id then
         Settings.OpenToCategory(id)
     else
         Log("FAIL — could not extract category ID")
