@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Fixed
+- Rich settings `MultiSelect` re-reads its summary each time the panel opens, so options changed elsewhere no longer show stale text. `VersionGate` MINOR is 28.
+
 ## [1.23.0] - 2026-10-02
 
 ### Added

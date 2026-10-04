@@ -534,6 +534,8 @@ function RichGroup:MultiSelect(opts)
         rowHover = hl,
         dropdown = dd,
         parent   = opts.parent,
+        -- Options can change outside the panel, so the summary is re-read on open.
+        refreshSelect = refreshSummary,
     }
     table.insert(self.settings, setting)
     self.byLabel[opts.label] = setting
