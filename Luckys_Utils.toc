@@ -1,4 +1,4 @@
-## Interface: 120100
+## Interface: 120100, 16001
 ## Title: Lucky's Utils
 ## Notes: Shared Library for Lucky Phil's Addons
 ## Version: 1.23.0
