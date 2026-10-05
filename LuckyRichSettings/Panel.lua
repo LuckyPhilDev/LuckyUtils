@@ -473,7 +473,11 @@ function LuckySettings:NewRichPanel(displayName, opts, contents)
 
     builder.category = self:Register(canvas, displayName)
 
+    -- Leaving a page, Blizzard unparents and unanchors its canvas, and resolving
+    -- the rows against no rect froze the game for over a minute on long groups.
+    -- Re-anchoring to the same area keeps the rect valid.
     canvas:HookScript("OnHide", function()
+        canvas:SetAllPoints(SettingsPanel.Container.SettingsCanvas)
         builder.hoveredSetting = nil
         hideImagePreview()
     end)
