@@ -59,6 +59,14 @@ LuckyUtilsStrings = LuckyStrings.New("LuckyUtilsStrings", {
             name = "Lucky's Wardrobe",
             desc = "Find the sets you can still finish, and hear about it the moment a piece drops.",
         },
+        actionbars = {
+            name = "Lucky's Actionbars",
+            desc = "Makes Blizzard's action bars do more without replacing them.",
+        },
+        loadouts = {
+            name = "Lucky's Loadouts",
+            desc = "Assign talent loadouts to your content and get a reminder when it changes.",
+        },
     },
 
     bankRun = {

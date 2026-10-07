@@ -57,6 +57,20 @@ local ADDONS = {
         icon   = LuckyMedia("promo-wardrobe.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-wardrobe",
     },
+    {
+        folder = "Luckys_Actionbars",
+        name   = S.actionbars.name,
+        desc   = S.actionbars.desc,
+        icon   = LuckyMedia("promo-actionbars.tga"),
+        url    = "https://www.curseforge.com/wow/addons/luckys-actionbars",
+    },
+    {
+        folder = "Luckys_Loadouts",
+        name   = S.loadouts.name,
+        desc   = S.loadouts.desc,
+        icon   = LuckyMedia("promo-loadouts.tga"),
+        url    = "https://www.curseforge.com/wow/addons/luckys-loadouts",
+    },
 }
 
 StaticPopupDialogs["LUCKY_PROMO_COPY_URL"] = {
