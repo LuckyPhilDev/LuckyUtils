@@ -1,7 +1,7 @@
-## [Unreleased]
+## [1.23.2] - 2026-10-07
 
 ### Added
-- The promo row now includes Lucky's Actionbars and Lucky's Loadouts, and `LuckyPromo:GetIcon` returns their artwork.
+- The promo row now includes Lucky's Actionbars and Lucky's Loadouts, and `LuckyPromo:GetIcon` returns their artwork. `VersionGate` MINOR is 29.
 
 ## [1.23.1] - 2026-10-05
 
