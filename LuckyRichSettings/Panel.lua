@@ -270,8 +270,8 @@ local function makeTitleIcon(titleBar, folder)
     if not path then return end
 
     local tex = titleBar:CreateTexture(nil, "ARTWORK")
-    tex:SetSize(24, 24)
-    tex:SetPoint("LEFT", 14, 0)
+    tex:SetSize(36, 36)
+    tex:SetPoint("LEFT", 8, 0)
     tex:SetTexture(path)
     return tex
 end
