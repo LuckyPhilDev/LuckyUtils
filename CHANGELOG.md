@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Added
+- The promo row now includes Lucky's Actionbars and Lucky's Loadouts, and `LuckyPromo:GetIcon` returns their artwork.
+
 ## [1.23.1] - 2026-10-05
 
 ### Added

@@ -57,6 +57,20 @@ local ADDONS = {
         icon   = LuckyMedia("promo-wardrobe.tga"),
         url    = "https://www.curseforge.com/wow/addons/luckys-wardrobe",
     },
+    {
+        folder = "Luckys_Actionbars",
+        name   = S.actionbars.name,
+        desc   = S.actionbars.desc,
+        icon   = LuckyMedia("promo-actionbars.tga"),
+        url    = "https://www.curseforge.com/wow/addons/luckys-actionbars",
+    },
+    {
+        folder = "Luckys_Loadouts",
+        name   = S.loadouts.name,
+        desc   = S.loadouts.desc,
+        icon   = LuckyMedia("promo-loadouts.tga"),
+        url    = "https://www.curseforge.com/wow/addons/luckys-loadouts",
+    },
 }
 
 StaticPopupDialogs["LUCKY_PROMO_COPY_URL"] = {
@@ -208,9 +222,12 @@ local function CreateIconButton(parent, entry, index)
     btn:SetBackdropColor(C.bgInput[1], C.bgInput[2], C.bgInput[3], 0.6)
     btn:SetBackdropBorderColor(C.borderDark[1], C.borderDark[2], C.borderDark[3])
 
+    -- The addon art carries transparent margin around its coin, so it bleeds past the
+    -- button edge to let the coin fill the tile; the Discord tile is full bleed already.
+    local inset = entry == DISCORD and 3 or -2
     local tex = btn:CreateTexture(nil, "ARTWORK")
-    tex:SetPoint("TOPLEFT", 3, -3)
-    tex:SetPoint("BOTTOMRIGHT", -3, 3)
+    tex:SetPoint("TOPLEFT", inset, -inset)
+    tex:SetPoint("BOTTOMRIGHT", -inset, inset)
     tex:SetTexture(entry.icon)
     -- Interface\Icons art carries a baked-in border; the Discord tile does not.
     if type(entry.icon) ~= "string" or entry.icon:find("Icons\\") then
