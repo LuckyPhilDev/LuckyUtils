@@ -1,3 +1,8 @@
+## [1.23.3] - 2026-10-13
+
+### Changed
+- Loads on patch 12.1.5 (interface 120105). `VersionGate` MINOR is 30.
+
 ## [1.23.2] - 2026-10-07
 
 ### Added
