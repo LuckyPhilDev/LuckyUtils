@@ -1,3 +1,8 @@
+## [1.23.4] - 2026-10-14
+
+### Fixed
+- `LuckyItem` no longer errors when loading items on patch 12.x with the game's deprecation fallbacks turned off. `VersionGate` MINOR is 31.
+
 ## [1.23.3] - 2026-10-13
 
 ### Changed
