@@ -38,7 +38,7 @@ local itemPending = LuckyItem._itemPending  -- itemID -> { callback, ... } while
 local function buildItemInfo(itemID)
     local name, link, quality, itemLevel, minLevel, itemType, itemSubType,
           _, equipLoc, icon, sellPrice, classID, subclassID, _, _, _,
-          isReagent = GetItemInfo(itemID)
+          isReagent = C_Item.GetItemInfo(itemID)
     return {
         id         = itemID,
         name       = name,
