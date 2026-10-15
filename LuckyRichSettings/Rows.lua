@@ -37,6 +37,25 @@ local STRING_FIELDS = { "label", "desc", "note", "warning", "suffix", "tooltip",
 -- a live read of store[key], the change handler writes it, and a handler the
 -- row named runs afterwards. Without a store, `key` keeps its old meaning as a
 -- frame-name suffix, so older consumers are unaffected.
+StaticPopupDialogs["LUCKY_SETTINGS_RELOAD"] = {
+    text           = S.reloadPrompt,
+    button1        = S.reloadNow,
+    button2        = S.reloadLater,
+    OnAccept       = function() ReloadUI() end,
+    timeout        = 0,
+    whileDead      = true,
+    hideOnEscape   = true,
+    preferredIndex = 3,
+}
+
+local function promptReloadAfter(opts, changeField)
+    local after = opts[changeField]
+    opts[changeField] = function(...)
+        if after then after(...) end
+        StaticPopup_Show("LUCKY_SETTINGS_RELOAD")
+    end
+end
+
 local function prepareRow(group, opts, valueField, changeField)
     local strings = opts[1]
     if strings ~= nil then
@@ -51,9 +70,7 @@ local function prepareRow(group, opts, valueField, changeField)
     if type(opts.parent) == "table" then opts.parent = opts.parent.label end
 
     local store = opts.db or group.db or group.panel.db
-    if not store then return end
-
-    if opts.key and valueField then
+    if store and opts.key and valueField then
         local key, after = opts.key, opts[changeField]
         opts[valueField] = function() return store[key] end
         opts[changeField] = function(v)
@@ -61,13 +78,16 @@ local function prepareRow(group, opts, valueField, changeField)
             if after then after(v) end
         end
     end
-    if opts.keys then
+    if store and opts.keys then
         local keys, after = opts.keys, opts.onToggle
         opts.isChecked = function(k) return store[keys[k]] end
         opts.onToggle = function(k, checked)
             store[keys[k]] = checked
             if after then after(k, checked) end
         end
+    end
+    if opts.requiresReload then
+        promptReloadAfter(opts, changeField or "onToggle")
     end
 end
 

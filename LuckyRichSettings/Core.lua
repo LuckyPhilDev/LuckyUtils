@@ -13,6 +13,7 @@
 --           g:Toggle{ S.foo, key = "foo" }   -- strings table first: label, desc, note, warning, suffix
 --           g:Toggle{ S.bar, key = "bar", parent = S.foo,
 --                     onToggle = function(v) MyAddon.Bar:Apply() end }  -- runs after the write
+--           g:Toggle{ S.baz, key = "baz", requiresReload = true }  -- any row: offers a reload once changed
 --           g:MultiSelect{ S.raids, keys = { lfr = "logLFR", normal = "logNormal" }, options = ... }
 --           g:Toggle{ label = "...", desc = "...",
 --                     checked = function() return db.foo end,

@@ -1,4 +1,4 @@
--- luacheck: globals CreateFrame LuckySettings LuckyUI C_AddOns RunNextFrame
+-- luacheck: globals CreateFrame LuckySettings LuckyUI C_AddOns RunNextFrame StaticPopupDialogs StaticPopup_Show
 
 -- Covers where LuckyRichSettings puts rows: the What's New list folds into the
 -- first group as a scrolling region, and that region has to end above the
@@ -127,6 +127,9 @@ LuckyUI = stub({
 })
 LuckySettings = stub({ Register = function() return "category" end })
 C_AddOns = stub({ GetAddOnMetadata = function() return "1.0.0" end })
+StaticPopupDialogs = {}
+local popupsShown = {}
+StaticPopup_Show = function(which) popupsShown[#popupsShown + 1] = which end
 
 -- Running a Select's menu generator against a stub root, so the test can read
 -- back the entries it would have created and pick one.
@@ -571,10 +574,29 @@ assert(not ok and err:find("typo"), "a row with no label fails naming its key")
 ok = pcall(function() rows:Toggle{ nil, key = "repair" } end)
 assert(not ok, "a nil strings table (a typo in S) fails at build")
 
+-- A row that only takes effect after a reload offers one once its handler ran,
+-- whether or not it is bound to a store.
+local reloadApplied = {}
+rows:Toggle{ label = "Restart Me", key = "restart", requiresReload = true,
+    onToggle = function(v) reloadApplied[#reloadApplied + 1] = v end }
+local restart = findSetting(rows, "Restart Me")
+restart.checkbox.checked = true
+restart.checkbox.scripts.OnClick(restart.checkbox)
+assert(store.restart == true and reloadApplied[1] == true, "a reload row still writes and runs its handler")
+assert(popupsShown[1] == "LUCKY_SETTINGS_RELOAD", "and then offers the reload")
+
+popupsShown = {}
+repair.checkbox.scripts.OnClick(repair.checkbox)
+assert(#popupsShown == 0, "a row without requiresReload never offers one")
+
 -- Without a store, `key` is only the slider's frame-name suffix, as before.
 local unbound = LuckySettings:NewRichPanel("Unbound", {})
 local free = unbound:Group("Free")
 free:Slider{ label = "Delay", key = "Delay", min = 0, max = 5, value = 2 }
 assert(findSetting(free, "Delay").slider.value == 2, "an unbound slider keeps its plain value")
+free:Toggle{ label = "Unbound Restart", checked = false, requiresReload = true, onToggle = function() end }
+local unboundRestart = findSetting(free, "Unbound Restart")
+unboundRestart.checkbox.scripts.OnClick(unboundRestart.checkbox)
+assert(popupsShown[#popupsShown] == "LUCKY_SETTINGS_RELOAD", "an unbound reload row offers it too")
 
 print("LuckyRichSettings tests passed")

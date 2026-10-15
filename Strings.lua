@@ -157,5 +157,8 @@ LuckyUtilsStrings = LuckyStrings.New("LuckyUtilsStrings", {
         warningTitle   = "Warning",
         badgeNew       = "NEW",
         badgeWip       = "WIP",
+        reloadPrompt   = "This setting takes effect after a reload. Reload now?",
+        reloadNow      = "Reload",
+        reloadLater    = "Later",
     },
 })

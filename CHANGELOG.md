@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Added
+- Settings rows take `requiresReload = true`. Changing the row offers a reload once its handler has run.
+
 ## [1.23.4] - 2026-10-14
 
 ### Fixed
