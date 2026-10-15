@@ -1,7 +1,7 @@
-## [Unreleased]
+## [1.23.5] - 2026-10-15
 
 ### Added
-- Settings rows take `requiresReload = true`. Changing the row offers a reload once its handler has run.
+- Settings rows take `requiresReload = true`. Changing the row offers a reload once its handler has run. `VersionGate` MINOR is 32.
 
 ## [1.23.4] - 2026-10-14
 
