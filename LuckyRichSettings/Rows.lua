@@ -599,10 +599,10 @@ function RichGroup:Select(opts)
         -- Right-aligned on the line below the label, sharing an edge with the
         -- values on Label rows. The 22 clears the row's top pad and the label line.
         label:SetPoint("TOPLEFT", indent, -4)
-        dd:SetPoint("TOPRIGHT", row, "TOPRIGHT", -14, -22)
+        dd:SetPoint("TOPRIGHT", row, "TOPRIGHT", -8, -22)
     else
         label:SetPoint("LEFT", indent, 0)
-        dd:SetPoint("RIGHT", -14, 0)
+        dd:SetPoint("RIGHT", -8, 0)
     end
 
     makeBadges(self.panel, row, label, opts)
@@ -834,7 +834,7 @@ function RichGroup:Label(opts)
 
     local val = frame:CreateFontString(nil, "OVERLAY")
     val:SetFont(R_FONT, 11, "")
-    val:SetPoint("RIGHT", -14, 0)
+    val:SetPoint("RIGHT", -8, 0)
     val:SetTextColor(R.accentLight[1], R.accentLight[2], R.accentLight[3])
     val:SetText(opts.value)
 
@@ -854,7 +854,7 @@ function RichGroup:Notice(opts)
 
     local box = CreateFrame("Frame", nil, frame, "BackdropTemplate")
     box:SetPoint("TOPLEFT", 14, -8)
-    box:SetPoint("TOPRIGHT", -14, -8)
+    box:SetPoint("TOPRIGHT", -8, -8)
     box:SetBackdrop(LuckyUI.Backdrop)
     box:SetBackdropColor(R.warn[1], R.warn[2], R.warn[3], 0.07)
     box:SetBackdropBorderColor(R.warn[1], R.warn[2], R.warn[3], 0.18)
@@ -931,7 +931,7 @@ function RichGroup:BottomLabel(opts)
 
     local val = frame:CreateFontString(nil, "OVERLAY")
     val:SetFont(R_FONT, 11, "")
-    val:SetPoint("RIGHT", -14, 0)
+    val:SetPoint("RIGHT", -8, 0)
     val:SetTextColor(R.accentLight[1], R.accentLight[2], R.accentLight[3])
     val:SetText(opts.value)
 
@@ -964,7 +964,7 @@ function RichGroup:BottomLink(opts)
 
     local val = frame:CreateFontString(nil, "OVERLAY")
     val:SetFont(R_FONT, 11, "")
-    val:SetPoint("RIGHT", -14, 0)
+    val:SetPoint("RIGHT", -8, 0)
     val:SetTextColor(R.accent[1], R.accent[2], R.accent[3])
     val:SetText(opts.value)
 
@@ -1025,7 +1025,7 @@ function RichGroup:BottomSection(name)
     local rule = frame:CreateTexture(nil, "ARTWORK")
     rule:SetHeight(1)
     rule:SetPoint("LEFT", label, "RIGHT", 8, 1)
-    rule:SetPoint("RIGHT", -14, 1)
+    rule:SetPoint("RIGHT", -8, 1)
     rule:SetColorTexture(R.border[1], R.border[2], R.border[3], R.border[4])
 
     table.insert(self.bottomSettings, { row = frame })
@@ -1061,7 +1061,7 @@ function RichGroup:Section(name)
     local rule = frame:CreateTexture(nil, "ARTWORK")
     rule:SetHeight(1)
     rule:SetPoint("LEFT", label, "RIGHT", 8, 1)
-    rule:SetPoint("RIGHT", -14, 1)
+    rule:SetPoint("RIGHT", -8, 1)
     rule:SetColorTexture(R.border[1], R.border[2], R.border[3], R.border[4])
 
     table.insert(self.settings, { row = frame, isSection = true, name = name })
@@ -1214,7 +1214,7 @@ function RichGroup:Card(opts)
 
     local versionTag = row:CreateFontString(nil, "OVERLAY")
     versionTag:SetFont(R_FONT, 10, "")
-    versionTag:SetPoint("RIGHT", -14, 0)
+    versionTag:SetPoint("RIGHT", -8, 0)
     versionTag:SetTextColor(R.textFaint[1], R.textFaint[2], R.textFaint[3])
     versionTag:SetText(opts.since and ("v" .. opts.since) or "")
 

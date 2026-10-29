@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Changed
+- Settings panel values, dropdowns, notices, version tags and section rules sit 8px from the right edge instead of 14px.
+
 ## [1.23.5] - 2026-10-15
 
 ### Added
