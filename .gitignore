@@ -4,3 +4,5 @@ AGENTS.md
 
 # local icon bake script (regenerates Media/icons from SVG sources)
 tools/
+.claude/worktrees/
+.codex/worktrees/
