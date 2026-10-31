@@ -187,6 +187,25 @@ check(window().alpha, 1, "and leaving gives the whole wait again")
 tick(2)
 check(window().alpha, 0.4, "before it dims once more")
 
+local looks = 0
+local isMouseOver = window().IsMouseOver
+window().IsMouseOver = function(self) looks = looks + 1 return isMouseOver(self) end
+for _ = 1, 6 do tick(0.05) end
+check(looks, 3, "settled, it only looks at the mouse every tenth of a second")
+window().mouseOver = true
+for _ = 1, 2 do tick(0.05) end
+check(math.floor(window().alpha * 100 + 0.5), 60, "hovering starts bringing it back with no more than one frame's step")
+tick(0.05)
+tick(0.05)
+check(window().alpha, 1, "and the fade then runs every frame")
+window().mouseOver = false
+window().IsMouseOver = nil
+tick(2)
+tick(2)
+check(window().alpha, 1, "the skipped moments still count towards the wait")
+tick(1.2)
+check(window().alpha, 0.4, "so it dims on schedule")
+
 LuckyReminders:Refresh()
 check(window().alpha, 0.4, "a redraw leaves it dimmed")
 LuckyReminders:Show()

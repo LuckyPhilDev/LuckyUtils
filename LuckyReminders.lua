@@ -31,6 +31,7 @@ local DEFAULT_ORDER = 100
 local DEFAULT_DIM_SECONDS = 3
 local DEFAULT_DIM_ALPHA = 0.3
 local DIM_FADE = 0.25
+local DIM_IDLE_POLL = 0.1
 
 -- State lives on the global so a newer library copy inherits it.
 Reminders.sources = Reminders.sources or {}
@@ -116,10 +117,18 @@ end
 
 -- Dims the window once it has sat unhovered for the dim wait, and brings it
 -- back under the mouse. Runs on a child because the auto-hide owns the
--- window's own OnUpdate.
+-- window's own OnUpdate. Once the fade has landed it only looks every
+-- DIM_IDLE_POLL, carrying the skipped time into the next look.
 local function WatchDim(f)
     f.dimmer = CreateFrame("Frame", nil, f)
-    f.dimmer:SetScript("OnUpdate", function(_, elapsed)
+    f.dimIdle = 0
+    f.dimmer:SetScript("OnUpdate", function(_, frameTime)
+        local elapsed = frameTime
+        if f.dimLevel == f.dimTarget then
+            f.dimIdle = f.dimIdle + frameTime
+            if f.dimIdle < DIM_IDLE_POLL then return end
+            elapsed, f.dimIdle = f.dimIdle, 0
+        end
         local wait = DimSeconds()
         if wait == 0 or f:IsMouseOver() then
             f.brightLeft = wait
@@ -127,8 +136,9 @@ local function WatchDim(f)
             f.brightLeft = math.max(0, f.brightLeft - elapsed)
         end
         local target = (wait == 0 or f.brightLeft > 0) and 1 or DimAlpha()
+        f.dimTarget = target
         if target ~= f.dimLevel then
-            f.dimLevel = Approach(f.dimLevel, target, elapsed / DIM_FADE)
+            f.dimLevel = Approach(f.dimLevel, target, frameTime / DIM_FADE)
             f:SetAutoHideAlpha(f.dimLevel)
         end
     end)
