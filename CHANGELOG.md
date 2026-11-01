@@ -1,7 +1,7 @@
-## [Unreleased]
+## [1.23.7] - 2026-11-01
 
 ### Changed
-- The Reminders window checks the mouse for dimming every 0.1s once the fade has settled, instead of every frame.
+- The Reminders window checks the mouse for dimming every 0.1s once the fade has settled, instead of every frame. `VersionGate` MINOR is 34.
 
 ## [1.23.6] - 2026-10-29
 
