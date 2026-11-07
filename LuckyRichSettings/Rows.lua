@@ -62,7 +62,8 @@ local function prepareRow(group, opts, valueField, changeField)
         assert(type(strings) == "table" and type(strings.label) == "string",
             "settings row: the strings table needs a string label")
         for _, field in ipairs(STRING_FIELDS) do
-            if opts[field] == nil then opts[field] = strings[field] end
+            -- rawget: a LuckyStrings table answers a missing field with a red placeholder, not nil.
+            if opts[field] == nil then opts[field] = rawget(strings, field) end
         end
     end
     assert(type(opts.label) == "string",

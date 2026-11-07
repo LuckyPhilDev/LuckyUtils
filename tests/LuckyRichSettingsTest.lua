@@ -527,6 +527,7 @@ local S = {
     raids  = { label = "Raids", desc = "Which." },
     dismiss = { label = "Dismiss", desc = "Per character." },
 }
+LuckyStrings.New("Test.Strings", S)
 local applied = {}
 local bound = LuckySettings:NewRichPanel("Bound", { db = store })
 local rows = bound:Group("Rows")
@@ -546,6 +547,8 @@ assert(repair.desc == "Repairs." and repair.note == "A note.", "and the desc and
 assert(repair.checkbox.checked == true, "checked is read from the store")
 assert(findSetting(rows, "Guild Funds").parentSetting == repair, "a strings table names a parent")
 assert(findSetting(rows, "Timer").suffix == "s", "a slider takes its suffix from the strings table")
+assert(repair.warning == nil and findSetting(rows, "Guild Funds").note == nil,
+    "a field the sealed strings table lacks stays nil instead of becoming its placeholder")
 
 repair.checkbox.checked = false
 repair.checkbox.scripts.OnClick(repair.checkbox)

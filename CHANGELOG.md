@@ -4,6 +4,9 @@
 - `LuckyUtils.Game()` names the running client (`mainline`, `forever`, `classic_era`, `mists_classic` and the other Classic flavours), with `LuckyUtils.IsMainline()` and `LuckyUtils.IsForever()` shortcuts, so retail-only features can be switched off on WoW Forever. `VersionGate` MINOR is 35.
 - `panel:Refresh()` on a rich settings panel re-reads its controls, for a button that changes values while the panel is open.
 
+### Fixed
+- A rich settings row given a strings table made with `LuckyStrings.New` no longer shows red placeholder text for the fields that table leaves out (warning, note, suffix and the like).
+
 ## [1.23.7] - 2026-11-01
 
 ### Changed
