@@ -260,6 +260,11 @@ function RichBuilder:Open()
     LuckySettings:Open(self.category)
 end
 
+--- Re-read every function-valued control, for a value changed while the panel is open.
+function RichBuilder:Refresh()
+    refreshLiveValues(self)
+end
+
 -- ─── Title bar ────────────────────────────────────────────────────────────────
 
 -- The suite's promo artwork doubles as each addon's icon; anything outside the
