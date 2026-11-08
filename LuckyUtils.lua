@@ -82,6 +82,36 @@ function LuckyUtils.Debounced(seconds, action)
 end
 
 -- ---------------------------------------------------------------------------
+-- Game Client Helpers
+-- ---------------------------------------------------------------------------
+
+-- WOW_PROJECT_* values per warcraft.wiki.gg/wiki/WOW_PROJECT_ID; literals because
+-- each client only defines the constants it knows about.
+local GAME_BY_PROJECT_ID = {
+    [1]  = "mainline",
+    [2]  = "classic_era",
+    [3]  = "wowlabs",
+    [5]  = "tbc_classic",
+    [11] = "wrath_classic",
+    [14] = "cata_classic",
+    [18] = "forever",
+    [19] = "mists_classic",
+}
+
+--- Which WoW client is running: "mainline", "forever", "classic_era",
+-- "mists_classic", ... or "unknown" for a project ID not in the table.
+-- @return string
+function LuckyUtils.Game()
+    local interface = select(4, GetBuildInfo())
+    -- Early Forever beta builds report the Mainline project ID; only the 16xxx interface gives them away.
+    if interface >= 16000 and interface < 20000 then return "forever" end
+    return GAME_BY_PROJECT_ID[WOW_PROJECT_ID] or "unknown"
+end
+
+function LuckyUtils.IsMainline() return LuckyUtils.Game() == "mainline" end
+function LuckyUtils.IsForever()  return LuckyUtils.Game() == "forever" end
+
+-- ---------------------------------------------------------------------------
 -- Character Helpers
 -- ---------------------------------------------------------------------------
 
