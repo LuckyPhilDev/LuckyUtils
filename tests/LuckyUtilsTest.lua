@@ -1,4 +1,4 @@
--- luacheck: globals C_Timer
+-- luacheck: globals C_Timer GetBuildInfo WOW_PROJECT_ID
 
 LuckyUtils = nil
 
@@ -40,4 +40,20 @@ assert(runs == 1, "the action should run once per burst")
 bump()
 assert(#pendingTimers == 2, "a later call should queue a fresh timer")
 
-print("3 LuckyUtils tests passed")
+local function client(projectID, interface)
+    WOW_PROJECT_ID = projectID
+    GetBuildInfo = function() return "x", "1", "date", interface end
+end
+
+client(1, 120100)
+assert(LuckyUtils.Game() == "mainline" and LuckyUtils.IsMainline() and not LuckyUtils.IsForever(), "retail is mainline")
+client(18, 16001)
+assert(LuckyUtils.Game() == "forever" and LuckyUtils.IsForever() and not LuckyUtils.IsMainline(), "camelot project is Forever")
+client(1, 16001)
+assert(LuckyUtils.IsForever() and not LuckyUtils.IsMainline(), "early Forever builds reporting Mainline are Forever")
+client(19, 50500)
+assert(LuckyUtils.Game() == "mists_classic", "Mists Classic is recognised")
+client(99, 990000)
+assert(LuckyUtils.Game() == "unknown", "an unlisted project is unknown")
+
+print("4 LuckyUtils tests passed")

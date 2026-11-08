@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Added
+- `LuckyUtils.Game()` names the running client (`mainline`, `forever`, `classic_era`, `mists_classic` and the other Classic flavours), with `LuckyUtils.IsMainline()` and `LuckyUtils.IsForever()` shortcuts, so retail-only features can be switched off on WoW Forever. `VersionGate` MINOR is 35.
+
 ## [1.23.7] - 2026-11-01
 
 ### Changed

@@ -80,6 +80,11 @@ local cost = LuckyUtils.FormatMoney(123456)
 
 -- Run once per burst of calls, after the delay
 local refresh = LuckyUtils.Debounced(0.25, RebuildList)
+
+-- Which client is running: "mainline", "forever", "classic_era", "mists_classic", ...
+local game = LuckyUtils.Game()
+if LuckyUtils.IsMainline() then ... end
+if LuckyUtils.IsForever() then ... end
 ```
 
 ---
